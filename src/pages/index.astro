@@ -43,27 +43,27 @@ const yearData = [
     <div class="metrics-grid">
       <article class="metric-card metric-dark">
         <span>누적 매출</span>
-        <strong>{formatWon(metrics.revenue)}</strong>
+        <strong data-live-revenue>{formatWon(metrics.revenue)}</strong>
         <small>공개 프로젝트 기준</small>
       </article>
       <article class="metric-card">
         <span>올해 프로젝트</span>
-        <strong>{String(metrics.projectCount).padStart(2, '0')}</strong>
+        <strong data-live-projects>{String(metrics.projectCount).padStart(2, '0')}</strong>
         <small>목표 12개 중</small>
       </article>
       <article class="metric-card">
         <span>평균 제작 기간</span>
-        <strong>{metrics.averageDays}<i>일</i></strong>
+        <strong><span data-live-days>{metrics.averageDays}</span><i>일</i></strong>
         <small>아이디어 → 출시</small>
       </article>
       <article class="metric-card metric-coral">
         <span>총 마케팅 비용</span>
-        <strong>{formatWon(metrics.marketingCost)}</strong>
+        <strong data-live-marketing>{formatWon(metrics.marketingCost)}</strong>
         <small>광고와 콘텐츠 포함</small>
       </article>
       <article class="metric-card">
         <span>활용한 AI</span>
-        <strong>{String(metrics.aiToolCount).padStart(2, '0')}</strong>
+        <strong data-live-ai>{String(metrics.aiToolCount).padStart(2, '0')}</strong>
         <small>실제 제작에 사용</small>
       </article>
     </div>
@@ -89,10 +89,10 @@ const yearData = [
     <div class="chart-card donut-card">
       <div class="card-label"><span>프로젝트 결과</span><small>완료 프로젝트</small></div>
       <div class="donut-wrap">
-        <div class="donut" style={`--success:${metrics.successRate * 3.6}deg`}><span><b>{metrics.successRate}%</b>SUCCESS</span></div>
+        <div class="donut" data-live-donut style={`--success:${metrics.successRate * 3.6}deg`}><span><b data-live-success>{metrics.successRate}%</b>SUCCESS</span></div>
         <div class="legend">
-          <p><i class="dot dot-blue"></i><span>성공</span><b>{metrics.successRate}%</b></p>
-          <p><i class="dot dot-coral"></i><span>실패</span><b>{metrics.failureRate}%</b></p>
+          <p><i class="dot dot-blue"></i><span>성공</span><b data-live-success>{metrics.successRate}%</b></p>
+          <p><i class="dot dot-coral"></i><span>실패</span><b data-live-failure>{metrics.failureRate}%</b></p>
         </div>
       </div>
     </div>
@@ -142,4 +142,38 @@ const yearData = [
       ))}
     </div>
   </section>
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    const won = new Intl.NumberFormat('ko-KR');
+    const { data: liveProjects } = await supabase
+      .from('projects')
+      .select('status,revenue,marketing_cost,started_at,launched_at,project_ai_tools(ai_tools(name))')
+      .eq('is_public', true);
+
+    if (liveProjects?.length) {
+      const completed = liveProjects.filter((project) => ['successful', 'closed'].includes(project.status));
+      const successful = completed.filter((project) => project.status === 'successful').length;
+      const successRate = completed.length ? Math.round(successful / completed.length * 100) : 0;
+      const durations = liveProjects
+        .filter((project) => project.started_at && project.launched_at)
+        .map((project) => Math.max(1, Math.round((new Date(project.launched_at).getTime() - new Date(project.started_at).getTime()) / 86400000)));
+      const averageDays = durations.length ? Math.round(durations.reduce((sum, days) => sum + days, 0) / durations.length) : 0;
+      const tools = new Set<string>();
+      liveProjects.forEach((project: any) => project.project_ai_tools?.forEach((link: any) => {
+        if (link.ai_tools?.name) tools.add(link.ai_tools.name);
+      }));
+      const revenue = liveProjects.reduce((sum, project) => sum + Number(project.revenue || 0), 0);
+      const marketing = liveProjects.reduce((sum, project) => sum + Number(project.marketing_cost || 0), 0);
+
+      document.querySelectorAll('[data-live-success]').forEach((node) => node.textContent = `${successRate}%`);
+      document.querySelectorAll('[data-live-failure]').forEach((node) => node.textContent = `${100 - successRate}%`);
+      document.querySelector<HTMLElement>('[data-live-donut]')?.style.setProperty('--success', `${successRate * 3.6}deg`);
+      document.querySelector('[data-live-revenue]')!.textContent = `₩${won.format(revenue)}`;
+      document.querySelector('[data-live-projects]')!.textContent = String(liveProjects.length).padStart(2, '0');
+      document.querySelector('[data-live-days]')!.textContent = String(averageDays);
+      document.querySelector('[data-live-marketing]')!.textContent = `₩${won.format(marketing)}`;
+      document.querySelector('[data-live-ai]')!.textContent = String(tools.size).padStart(2, '0');
+    }
+  </script>
 </BaseLayout>

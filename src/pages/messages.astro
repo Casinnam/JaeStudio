@@ -22,12 +22,35 @@ import { messages } from '../data/site';
     </div>
   </section>
   <script>
+    import { supabase } from '../lib/supabase';
+
     const form = document.querySelector<HTMLFormElement>('#message-form');
     const status = document.querySelector<HTMLElement>('.form-status');
-    form?.addEventListener('submit', (event) => {
+    form?.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (status) status.textContent = '초안에서는 전송 화면만 확인할 수 있어요. Supabase 연결 후 실제로 저장됩니다.';
-      form.reset();
+      const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const formData = new FormData(form);
+      const displayName = String(formData.get('name') || '').trim();
+      const message = String(formData.get('message') || '').trim();
+
+      if (!displayName || !message) return;
+      if (submitButton) submitButton.disabled = true;
+      if (status) status.textContent = '메시지를 보내고 있어요…';
+
+      const { error } = await supabase.from('support_messages').insert({
+        display_name: displayName,
+        message,
+        is_approved: false
+      });
+
+      if (error) {
+        if (status) status.textContent = '전송하지 못했습니다. 잠시 후 다시 시도해주세요.';
+        console.error('Support message submission failed:', error.message);
+      } else {
+        if (status) status.textContent = '고맙습니다! 확인 후 응원 메시지에 공개할게요.';
+        form.reset();
+      }
+      if (submitButton) submitButton.disabled = false;
     });
   </script>
 </BaseLayout>

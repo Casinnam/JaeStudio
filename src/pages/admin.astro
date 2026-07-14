@@ -1,30 +1,248 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { metrics, formatWon } from '../data/site';
 ---
-<BaseLayout title="Admin — JAE STUDIO" description="JAE STUDIO 콘텐츠 관리 초안">
-  <section class="admin-page shell">
+<BaseLayout title="Admin — JAE STUDIO" description="JAE STUDIO 콘텐츠 관리">
+  <section class="admin-login shell" data-auth-panel>
+    <div class="admin-login-card">
+      <span class="brand-mark">J</span>
+      <span class="eyebrow">PRIVATE STUDIO</span>
+      <h1>관리자 로그인</h1>
+      <p>프로젝트의 숫자와 이야기를 업데이트합니다.</p>
+      <form id="admin-login-form">
+        <label>이메일<input name="email" type="email" value="hijacker05@gmail.com" autocomplete="email" required /></label>
+        <label>비밀번호<input name="password" type="password" autocomplete="current-password" required /></label>
+        <button class="button button-primary" type="submit">로그인</button>
+        <p class="form-status" data-login-status aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="admin-page shell is-hidden" data-admin-app>
     <aside class="admin-sidebar">
       <div><span class="brand-mark">J</span><strong>Studio Admin</strong></div>
-      <nav><a class="active" href="#">대시보드</a><a href="#project-form">프로젝트</a><a href="#">블로그</a><a href="#">응원 메시지 <b>3</b></a><a href="#">사이트 설정</a></nav>
+      <nav>
+        <a class="active" href="#dashboard">대시보드</a>
+        <a href="#project-editor">프로젝트</a>
+        <a href="#blog-editor">블로그</a>
+        <a href="#message-editor">응원 메시지 <b data-message-count>0</b></a>
+      </nav>
       <a class="back-link" href="/">← 사이트로 돌아가기</a>
     </aside>
     <div class="admin-content">
-      <header><div><small>2026년 7월 14일</small><h1>안녕하세요, Jae.</h1><p>오늘도 하나씩 세상에 내놓아 볼까요?</p></div><button class="button button-primary">+ 새 프로젝트</button></header>
-      <div class="admin-metrics"><div><small>누적 매출</small><strong>{formatWon(metrics.revenue)}</strong></div><div><small>프로젝트</small><strong>{metrics.projectCount}</strong></div><div><small>성공률</small><strong>{metrics.successRate}%</strong></div></div>
-      <section class="admin-panel" id="project-form">
-        <div class="panel-heading"><div><small>PROJECT EDITOR</small><h2>프로젝트 등록</h2></div><span class="draft-badge">초안 화면</span></div>
-        <form class="project-form">
-          <label class="wide">프로젝트 이름<input placeholder="예: Focus Flow" /></label>
-          <label class="wide">한 줄 소개<input placeholder="무엇을 해결하는 서비스인가요?" /></label>
-          <label>시작일<input type="date" /></label><label>출시일<input type="date" /></label>
-          <label>마케팅 비용<input type="number" placeholder="0" /></label><label>누적 매출<input type="number" placeholder="0" /></label>
-          <label>상태<select><option>실험 중</option><option>성장 중</option><option>성공</option><option>종료</option></select></label>
-          <label>사용한 AI<input placeholder="Codex, ChatGPT" /></label>
-          <label class="wide">배운 점<textarea rows="4" placeholder="성공하거나 실패한 이유를 기록하세요."></textarea></label>
-          <div class="wide admin-actions"><small>Supabase 연결 후 저장 기능이 활성화됩니다.</small><button class="button button-primary" type="button">프로젝트 저장</button></div>
+      <header id="dashboard">
+        <div><small>JAE STUDIO CONTROL ROOM</small><h1>안녕하세요, Jae.</h1><p>입력한 데이터는 공개 페이지의 실제 수치로 반영됩니다.</p></div>
+        <button class="button button-outline" type="button" data-sign-out>로그아웃</button>
+      </header>
+      <div class="admin-metrics">
+        <div><small>누적 매출</small><strong data-admin-revenue>₩0</strong></div>
+        <div><small>프로젝트</small><strong data-admin-projects>0</strong></div>
+        <div><small>성공률</small><strong data-admin-success>0%</strong></div>
+      </div>
+
+      <section class="admin-panel" id="project-editor">
+        <div class="panel-heading"><div><small>PROJECT EDITOR</small><h2>프로젝트 등록</h2></div><span class="live-badge">Supabase 연결</span></div>
+        <form class="project-form" id="project-form">
+          <label>프로젝트 이름<input name="name" placeholder="예: Focus Flow" required /></label>
+          <label>주소용 영문 이름<input name="slug" placeholder="예: focus-flow" required /></label>
+          <label class="wide">한 줄 소개<input name="summary" placeholder="무엇을 해결하는 서비스인가요?" required /></label>
+          <label class="wide">웹사이트 주소<input name="website_url" type="url" placeholder="https://" /></label>
+          <label>시작일<input name="started_at" type="date" /></label><label>출시일<input name="launched_at" type="date" /></label>
+          <label>마케팅 비용<input name="marketing_cost" type="number" min="0" value="0" /></label><label>누적 매출<input name="revenue" type="number" min="0" value="0" /></label>
+          <label>월 반복 매출<input name="recurring_revenue" type="number" min="0" value="0" /></label><label>유료 고객 수<input name="paid_customers" type="number" min="0" value="0" /></label>
+          <label>상태<select name="status"><option value="experimenting">실험 중</option><option value="validating">수요 검증</option><option value="growing">성장 중</option><option value="successful">성공</option><option value="closed">종료</option></select></label>
+          <label class="check-label"><input name="is_public" type="checkbox" checked /> 공개하기</label>
+          <label class="wide">배운 점<textarea name="lesson" rows="4" placeholder="성공하거나 실패한 이유를 기록하세요."></textarea></label>
+          <div class="wide admin-actions"><p class="form-status" data-project-status></p><button class="button button-primary" type="submit">프로젝트 저장</button></div>
         </form>
+        <div class="admin-record-list" data-project-list></div>
+      </section>
+
+      <section class="admin-panel" id="blog-editor">
+        <div class="panel-heading"><div><small>BLOG EDITOR</small><h2>새 글 작성</h2></div></div>
+        <form class="project-form" id="blog-form">
+          <label>제목<input name="title" required /></label><label>주소용 영문 이름<input name="slug" placeholder="my-build-log" required /></label>
+          <label class="wide">요약<input name="excerpt" /></label>
+          <label class="wide">본문<textarea name="content" rows="10" required></textarea></label>
+          <label class="check-label"><input name="is_public" type="checkbox" checked /> 바로 공개</label>
+          <div class="wide admin-actions"><p class="form-status" data-blog-status></p><button class="button button-primary" type="submit">글 저장</button></div>
+        </form>
+        <div class="admin-record-list" data-blog-list></div>
+      </section>
+
+      <section class="admin-panel" id="message-editor">
+        <div class="panel-heading"><div><small>MESSAGE MODERATION</small><h2>승인 대기 메시지</h2></div></div>
+        <div class="admin-record-list" data-message-list><p class="empty-state">메시지를 불러오는 중입니다.</p></div>
       </section>
     </div>
   </section>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    const authPanel = document.querySelector<HTMLElement>('[data-auth-panel]');
+    const adminApp = document.querySelector<HTMLElement>('[data-admin-app]');
+    const loginForm = document.querySelector<HTMLFormElement>('#admin-login-form');
+    const loginStatus = document.querySelector<HTMLElement>('[data-login-status]');
+    const projectForm = document.querySelector<HTMLFormElement>('#project-form');
+    const blogForm = document.querySelector<HTMLFormElement>('#blog-form');
+    const money = new Intl.NumberFormat('ko-KR');
+
+    const setStatus = (target: Element | null, text: string, error = false) => {
+      if (!(target instanceof HTMLElement)) return;
+      target.textContent = text;
+      target.classList.toggle('status-error', error);
+    };
+
+    const row = (title: string, meta: string, actions: Array<{ label: string; action: string; id: string }>) => {
+      const item = document.createElement('div');
+      item.className = 'admin-record';
+      const copy = document.createElement('div');
+      const heading = document.createElement('strong');
+      const detail = document.createElement('small');
+      heading.textContent = title;
+      detail.textContent = meta;
+      copy.append(heading, detail);
+      const controls = document.createElement('div');
+      actions.forEach(({ label, action, id }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.dataset.action = action;
+        button.dataset.id = id;
+        controls.append(button);
+      });
+      item.append(copy, controls);
+      return item;
+    };
+
+    async function verifyAdmin() {
+      const { data, error } = await supabase.rpc('is_admin');
+      return !error && data === true;
+    }
+
+    async function showSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        authPanel?.classList.remove('is-hidden');
+        adminApp?.classList.add('is-hidden');
+        return;
+      }
+      if (!(await verifyAdmin())) {
+        await supabase.auth.signOut();
+        setStatus(loginStatus, '이 계정에는 관리자 권한이 없습니다.', true);
+        return;
+      }
+      authPanel?.classList.add('is-hidden');
+      adminApp?.classList.remove('is-hidden');
+      await loadDashboard();
+    }
+
+    loginForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const values = new FormData(loginForm);
+      setStatus(loginStatus, '로그인 중…');
+      const { error } = await supabase.auth.signInWithPassword({
+        email: String(values.get('email') || ''),
+        password: String(values.get('password') || '')
+      });
+      if (error) return setStatus(loginStatus, '이메일 또는 비밀번호를 확인해주세요.', true);
+      await showSession();
+    });
+
+    document.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.reload();
+    });
+
+    async function loadDashboard() {
+      const [{ data: projects }, { data: posts }, { data: messages }] = await Promise.all([
+        supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('blog_posts').select('*').order('created_at', { ascending: false }),
+        supabase.from('support_messages').select('*').eq('is_approved', false).order('created_at', { ascending: false })
+      ]);
+
+      const projectRows = projects || [];
+      const finished = projectRows.filter((project) => ['successful', 'closed'].includes(project.status));
+      const success = finished.filter((project) => project.status === 'successful').length;
+      const revenue = projectRows.reduce((sum, project) => sum + Number(project.revenue || 0), 0);
+      document.querySelector('[data-admin-revenue]')!.textContent = `₩${money.format(revenue)}`;
+      document.querySelector('[data-admin-projects]')!.textContent = String(projectRows.length);
+      document.querySelector('[data-admin-success]')!.textContent = `${finished.length ? Math.round(success / finished.length * 100) : 0}%`;
+      document.querySelector('[data-message-count]')!.textContent = String(messages?.length || 0);
+
+      const projectList = document.querySelector('[data-project-list]');
+      projectList?.replaceChildren(...projectRows.map((project) => row(project.name, `${project.status} · ₩${money.format(project.revenue)}`, [{ label: '삭제', action: 'delete-project', id: project.id }])));
+      if (projectList && !projectRows.length) projectList.innerHTML = '<p class="empty-state">등록된 프로젝트가 없습니다.</p>';
+
+      const blogList = document.querySelector('[data-blog-list]');
+      blogList?.replaceChildren(...(posts || []).map((post) => row(post.title, post.is_public ? '공개' : '비공개', [{ label: '삭제', action: 'delete-post', id: post.id }])));
+      if (blogList && !posts?.length) blogList.innerHTML = '<p class="empty-state">등록된 글이 없습니다.</p>';
+
+      const messageList = document.querySelector('[data-message-list]');
+      messageList?.replaceChildren(...(messages || []).map((message) => row(message.display_name, message.message, [
+        { label: '승인', action: 'approve-message', id: message.id },
+        { label: '삭제', action: 'delete-message', id: message.id }
+      ])));
+      if (messageList && !messages?.length) messageList.innerHTML = '<p class="empty-state">승인 대기 메시지가 없습니다.</p>';
+    }
+
+    projectForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const values = new FormData(projectForm);
+      const status = document.querySelector('[data-project-status]');
+      setStatus(status, '저장 중…');
+      const { error } = await supabase.from('projects').insert({
+        name: String(values.get('name')),
+        slug: String(values.get('slug')).trim().toLowerCase(),
+        summary: String(values.get('summary')),
+        website_url: String(values.get('website_url') || '') || null,
+        started_at: String(values.get('started_at') || '') || null,
+        launched_at: String(values.get('launched_at') || '') || null,
+        marketing_cost: Number(values.get('marketing_cost') || 0),
+        revenue: Number(values.get('revenue') || 0),
+        recurring_revenue: Number(values.get('recurring_revenue') || 0),
+        paid_customers: Number(values.get('paid_customers') || 0),
+        status: String(values.get('status')),
+        lesson: String(values.get('lesson') || '') || null,
+        is_public: values.get('is_public') === 'on'
+      });
+      if (error) return setStatus(status, `저장 실패: ${error.message}`, true);
+      projectForm.reset();
+      setStatus(status, '프로젝트가 저장되었습니다.');
+      await loadDashboard();
+    });
+
+    blogForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const values = new FormData(blogForm);
+      const isPublic = values.get('is_public') === 'on';
+      const status = document.querySelector('[data-blog-status]');
+      setStatus(status, '저장 중…');
+      const { error } = await supabase.from('blog_posts').insert({
+        title: String(values.get('title')),
+        slug: String(values.get('slug')).trim().toLowerCase(),
+        excerpt: String(values.get('excerpt') || '') || null,
+        content: String(values.get('content')),
+        is_public: isPublic,
+        published_at: isPublic ? new Date().toISOString() : null
+      });
+      if (error) return setStatus(status, `저장 실패: ${error.message}`, true);
+      blogForm.reset();
+      setStatus(status, '글이 저장되었습니다.');
+      await loadDashboard();
+    });
+
+    document.querySelector('.admin-content')?.addEventListener('click', async (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+      if (!button?.dataset.id || !button.dataset.action) return;
+      const { id, action } = button.dataset;
+      if (action === 'approve-message') await supabase.from('support_messages').update({ is_approved: true }).eq('id', id);
+      if (action === 'delete-message') await supabase.from('support_messages').delete().eq('id', id);
+      if (action === 'delete-project') await supabase.from('projects').delete().eq('id', id);
+      if (action === 'delete-post') await supabase.from('blog_posts').delete().eq('id', id);
+      await loadDashboard();
+    });
+
+    showSession();
+  </script>
 </BaseLayout>
