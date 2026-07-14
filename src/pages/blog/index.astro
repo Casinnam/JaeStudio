@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { posts } from '../../data/site';
+---
+<BaseLayout title="블로그 — JAE STUDIO" description="혼자 제품을 만들며 배우고 실패한 기록입니다.">
+  <section class="page-hero shell compact-hero">
+    <span class="eyebrow">BUILD JOURNAL</span>
+    <h1>결과보다 생생한<br /><em>과정의 기록.</em></h1>
+    <p>아이디어, 제작, 출시, 첫 결제 그리고 실패까지 솔직하게 씁니다.</p>
+  </section>
+  <section class="section shell journal-page">
+    <div class="post-list">
+      {posts.map((post, index) => (
+        <a class="post-row" href={`/blog/${post.slug}`}>
+          <span class="post-number">0{index + 1}</span>
+          <div><small>{post.category} · {post.date}</small><h3>{post.title}</h3></div>
+          <p>{post.excerpt}</p><span class="round-link">↗</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

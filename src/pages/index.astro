@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import OceanScene from '../components/OceanScene.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { projects, posts, messages, metrics, formatWon } from '../data/site';
+
+const yearData = [
+  { year: '2023', count: 2 },
+  { year: '2024', count: 5 },
+  { year: '2025', count: 8 },
+  { year: '2026', count: metrics.projectCount }
+];
+---
+
+<BaseLayout>
+  <section class="hero shell">
+    <div class="hero-copy">
+      <span class="eyebrow">INDEPENDENT MAKER · BUILDING IN PUBLIC</span>
+      <h1>아이디어를<br /><em>수익이 나는</em><br />서비스로.</h1>
+      <p>혼자 만들고, 빠르게 출시하고, 결과를 숨김없이 기록합니다. 목표는 단순합니다. 어디서든 일할 수 있는 삶.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="/projects">프로젝트 둘러보기 <span>↗</span></a>
+        <a class="text-link" href="#numbers">숫자로 보는 Jae <span>↓</span></a>
+      </div>
+    </div>
+    <OceanScene />
+  </section>
+
+  <section class="ticker" aria-label="제작 원칙">
+    <div>
+      <span>SHIP SMALL</span><b>✦</b><span>REVENUE FIRST</span><b>✦</b><span>STAY CURIOUS</span><b>✦</b><span>BUILD ANYWHERE</span><b>✦</b><span>SHIP SMALL</span>
+    </div>
+  </section>
+
+  <section class="section shell" id="numbers">
+    <div class="section-heading split-heading">
+      <div>
+        <span class="eyebrow">THE NUMBERS</span>
+        <h2>감이 아니라<br />숫자로 말합니다.</h2>
+      </div>
+      <p>좋아요보다 결제, 다운로드보다 재사용. 모든 프로젝트의 실제 결과를 기록합니다.</p>
+    </div>
+    <div class="metrics-grid">
+      <article class="metric-card metric-dark">
+        <span>누적 매출</span>
+        <strong>{formatWon(metrics.revenue)}</strong>
+        <small>공개 프로젝트 기준</small>
+      </article>
+      <article class="metric-card">
+        <span>올해 프로젝트</span>
+        <strong>{String(metrics.projectCount).padStart(2, '0')}</strong>
+        <small>목표 12개 중</small>
+      </article>
+      <article class="metric-card">
+        <span>평균 제작 기간</span>
+        <strong>{metrics.averageDays}<i>일</i></strong>
+        <small>아이디어 → 출시</small>
+      </article>
+      <article class="metric-card metric-coral">
+        <span>총 마케팅 비용</span>
+        <strong>{formatWon(metrics.marketingCost)}</strong>
+        <small>광고와 콘텐츠 포함</small>
+      </article>
+      <article class="metric-card">
+        <span>활용한 AI</span>
+        <strong>{String(metrics.aiToolCount).padStart(2, '0')}</strong>
+        <small>실제 제작에 사용</small>
+      </article>
+    </div>
+  </section>
+
+  <section class="section shell projects-section">
+    <div class="section-heading row-heading">
+      <div><span class="eyebrow">SELECTED WORK</span><h2>최근 프로젝트</h2></div>
+      <a class="text-link" href="/projects">전체 프로젝트 <span>↗</span></a>
+    </div>
+    <div class="projects-grid">
+      {projects.slice(0, 3).map((project, index) => <ProjectCard project={project} featured={index === 0} />)}
+    </div>
+  </section>
+
+  <section class="section shell results-section">
+    <div class="results-intro">
+      <span class="eyebrow">HONEST RESULTS</span>
+      <h2>성공도 실패도<br />전부 자산이니까.</h2>
+      <p>성공은 매출과 반복 사용으로 판단합니다. 실패한 실험도 배운 점과 함께 남깁니다.</p>
+      <a class="button button-outline" href="/projects">판단 기준 자세히 보기</a>
+    </div>
+    <div class="chart-card donut-card">
+      <div class="card-label"><span>프로젝트 결과</span><small>완료 프로젝트</small></div>
+      <div class="donut-wrap">
+        <div class="donut" style={`--success:${metrics.successRate * 3.6}deg`}><span><b>{metrics.successRate}%</b>SUCCESS</span></div>
+        <div class="legend">
+          <p><i class="dot dot-blue"></i><span>성공</span><b>{metrics.successRate}%</b></p>
+          <p><i class="dot dot-coral"></i><span>실패</span><b>{metrics.failureRate}%</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card bars-card">
+      <div class="card-label"><span>연도별 프로젝트</span><small>누적 기록</small></div>
+      <div class="bars">
+        {yearData.map((item) => (
+          <div class="bar-item">
+            <span class="bar-count">{item.count}</span>
+            <div class="bar" style={`height:${30 + item.count * 10}px`}></div>
+            <small>{item.year}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section shell journal-section">
+    <div class="section-heading row-heading">
+      <div><span class="eyebrow">BUILD JOURNAL</span><h2>만들며 배운 것들</h2></div>
+      <a class="text-link" href="/blog">모든 글 보기 <span>↗</span></a>
+    </div>
+    <div class="post-list">
+      {posts.map((post, index) => (
+        <a class="post-row" href={`/blog/${post.slug}`}>
+          <span class="post-number">0{index + 1}</span>
+          <div><small>{post.category} · {post.date}</small><h3>{post.title}</h3></div>
+          <p>{post.excerpt}</p>
+          <span class="round-link">↗</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="section shell message-section">
+    <div class="message-copy">
+      <span class="eyebrow">CHEER ME ON</span>
+      <h2>혼자 만들지만,<br />혼자는 아니니까.</h2>
+      <p>작은 한마디가 다음 프로젝트를 출시하게 만듭니다.</p>
+      <a class="button button-primary" href="/messages">응원 메시지 남기기 <span>♡</span></a>
+    </div>
+    <div class="message-stack">
+      {messages.map((message, index) => (
+        <blockquote style={`--rotate:${index % 2 ? '1.5deg' : '-1deg'}`}>
+          <span>“</span><p>{message.text}</p><footer>— {message.name}</footer>
+        </blockquote>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

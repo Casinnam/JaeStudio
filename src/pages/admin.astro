@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { metrics, formatWon } from '../data/site';
+---
+<BaseLayout title="Admin — JAE STUDIO" description="JAE STUDIO 콘텐츠 관리 초안">
+  <section class="admin-page shell">
+    <aside class="admin-sidebar">
+      <div><span class="brand-mark">J</span><strong>Studio Admin</strong></div>
+      <nav><a class="active" href="#">대시보드</a><a href="#project-form">프로젝트</a><a href="#">블로그</a><a href="#">응원 메시지 <b>3</b></a><a href="#">사이트 설정</a></nav>
+      <a class="back-link" href="/">← 사이트로 돌아가기</a>
+    </aside>
+    <div class="admin-content">
+      <header><div><small>2026년 7월 14일</small><h1>안녕하세요, Jae.</h1><p>오늘도 하나씩 세상에 내놓아 볼까요?</p></div><button class="button button-primary">+ 새 프로젝트</button></header>
+      <div class="admin-metrics"><div><small>누적 매출</small><strong>{formatWon(metrics.revenue)}</strong></div><div><small>프로젝트</small><strong>{metrics.projectCount}</strong></div><div><small>성공률</small><strong>{metrics.successRate}%</strong></div></div>
+      <section class="admin-panel" id="project-form">
+        <div class="panel-heading"><div><small>PROJECT EDITOR</small><h2>프로젝트 등록</h2></div><span class="draft-badge">초안 화면</span></div>
+        <form class="project-form">
+          <label class="wide">프로젝트 이름<input placeholder="예: Focus Flow" /></label>
+          <label class="wide">한 줄 소개<input placeholder="무엇을 해결하는 서비스인가요?" /></label>
+          <label>시작일<input type="date" /></label><label>출시일<input type="date" /></label>
+          <label>마케팅 비용<input type="number" placeholder="0" /></label><label>누적 매출<input type="number" placeholder="0" /></label>
+          <label>상태<select><option>실험 중</option><option>성장 중</option><option>성공</option><option>종료</option></select></label>
+          <label>사용한 AI<input placeholder="Codex, ChatGPT" /></label>
+          <label class="wide">배운 점<textarea rows="4" placeholder="성공하거나 실패한 이유를 기록하세요."></textarea></label>
+          <div class="wide admin-actions"><small>Supabase 연결 후 저장 기능이 활성화됩니다.</small><button class="button button-primary" type="button">프로젝트 저장</button></div>
+        </form>
+      </section>
+    </div>
+  </section>
+</BaseLayout>

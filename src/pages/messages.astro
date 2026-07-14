@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { messages } from '../data/site';
+---
+<BaseLayout title="응원 메시지 — JAE STUDIO" description="Jae의 다음 프로젝트에 응원 한마디를 남겨주세요.">
+  <section class="message-page shell">
+    <div class="message-form-copy">
+      <span class="eyebrow">LEAVE A NOTE</span>
+      <h1>다음 출시를 위한<br /><em>작은 한마디.</em></h1>
+      <p>남겨주신 메시지는 확인 후 이 페이지와 첫 화면에 공개됩니다.</p>
+      <form class="message-form" id="message-form">
+        <label>이름 또는 닉네임<input name="name" maxlength="30" placeholder="어떻게 불러드릴까요?" required /></label>
+        <label>응원 메시지<textarea name="message" maxlength="300" rows="5" placeholder="Jae에게 힘이 되는 한마디를 남겨주세요." required></textarea></label>
+        <div class="form-footer"><small>최대 300자 · 관리자 승인 후 공개</small><button class="button button-primary" type="submit">메시지 보내기 <span>♡</span></button></div>
+        <p class="form-status" aria-live="polite"></p>
+      </form>
+    </div>
+    <div class="message-wall">
+      {messages.concat(messages.slice(0, 2)).map((message, index) => (
+        <blockquote style={`--rotate:${index % 3 === 0 ? '-1.5deg' : index % 3 === 1 ? '1deg' : '-.4deg'}`}><span>“</span><p>{message.text}</p><footer>— {message.name}</footer></blockquote>
+      ))}
+    </div>
+  </section>
+  <script>
+    const form = document.querySelector<HTMLFormElement>('#message-form');
+    const status = document.querySelector<HTMLElement>('.form-status');
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (status) status.textContent = '초안에서는 전송 화면만 확인할 수 있어요. Supabase 연결 후 실제로 저장됩니다.';
+      form.reset();
+    });
+  </script>
+</BaseLayout>

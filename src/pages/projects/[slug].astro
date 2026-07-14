@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { projects, formatWon } from '../../data/site';
+
+export function getStaticPaths() {
+  return projects.map((project) => ({ params: { slug: project.slug }, props: { project } }));
+}
+
+const { project } = Astro.props;
+---
+<BaseLayout title={`${project.name} — JAE STUDIO`} description={project.description}>
+  <article class="case-study shell">
+    <a class="back-link" href="/projects">← 모든 프로젝트</a>
+    <header class="case-header">
+      <div><span class="status">{project.status}</span><h1>{project.name}</h1><p>{project.description}</p></div>
+      <a class="button button-primary" href={project.url}>사이트 방문 <span>↗</span></a>
+    </header>
+    <div class="case-visual" style={`--accent:${project.accent}`}><span>{project.name}</span></div>
+    <div class="case-metrics">
+      <div><small>제작 기간</small><strong>{project.durationDays}일</strong></div>
+      <div><small>마케팅 비용</small><strong>{formatWon(project.marketingCost)}</strong></div>
+      <div><small>누적 매출</small><strong>{formatWon(project.revenue)}</strong></div>
+      <div><small>활용 AI</small><strong>{project.aiTools.length}개</strong></div>
+    </div>
+    <div class="case-content">
+      <div><span class="eyebrow">THE LESSON</span><h2>이번 프로젝트에서<br />배운 한 가지</h2></div>
+      <blockquote>“{project.lesson}”</blockquote>
+    </div>
+  </article>
+</BaseLayout>

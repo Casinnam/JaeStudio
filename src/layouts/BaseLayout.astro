@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'JAE STUDIO — 아이디어를 실제 서비스로',
+  description = '1인 제작자 Jae의 프로젝트, 숫자, 성공과 실패를 투명하게 기록합니다.'
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5f0e6" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="JAE STUDIO 홈">
+        <span class="brand-mark">J</span>
+        <span>JAE STUDIO</span>
+      </a>
+      <nav aria-label="주요 메뉴">
+        <a href="/projects">프로젝트</a>
+        <a href="/blog">블로그</a>
+        <a href="/messages">응원 메시지</a>
+        <a class="nav-admin" href="/admin">Admin</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="brand footer-brand" href="/"><span class="brand-mark">J</span><span>JAE STUDIO</span></a>
+        <p>작게 만들고, 빠르게 출시하고, 숫자로 배웁니다.</p>
+      </div>
+      <div class="footer-note">
+        <span>Currently building from Vancouver</span>
+        <span>Dreaming of the Pacific · © 2026</span>
+      </div>
+    </footer>
+  </body>
+</html>

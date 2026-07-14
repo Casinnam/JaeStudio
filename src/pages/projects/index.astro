@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { projects } from '../../data/site';
+---
+<BaseLayout title="프로젝트 — JAE STUDIO" description="Jae가 만든 디지털 프로젝트와 실제 성과를 확인하세요.">
+  <section class="page-hero shell compact-hero">
+    <span class="eyebrow">ALL PROJECTS</span>
+    <h1>만든 것과<br /><em>배운 것.</em></h1>
+    <p>수익이 난 프로젝트도, 조용히 종료한 실험도 같은 무게로 기록합니다.</p>
+  </section>
+  <section class="section shell">
+    <div class="filter-row"><button class="active">전체</button><button>성공</button><button>성장 중</button><button>실험 중</button><button>종료</button></div>
+    <div class="projects-grid projects-grid-all">
+      {projects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+</BaseLayout>
