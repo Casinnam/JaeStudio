@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="블로그 — JAE STUDIO" description="혼자 제품을 만들며 배운 과정의 기록입니다.">
+  <article class="article-page shell" data-post-detail>
+    <a class="back-link" href="/blog">← 모든 글</a>
+    <header><span class="eyebrow" data-post-meta>BUILD JOURNAL</span><h1 data-post-title>글을 불러오는 중입니다</h1><p data-post-excerpt></p></header>
+    <div class="article-cover"><span>JAE'S BUILD JOURNAL</span></div>
+    <div class="article-body" data-post-content></div>
+    <p class="detail-error is-hidden" data-detail-error>글을 찾을 수 없습니다.</p>
+  </article>
+  <script>
+    import { supabase } from '../lib/supabase';
+    import { formatPublicDate } from '../lib/content-ui';
+
+    const querySlug = new URLSearchParams(location.search).get('slug');
+    const slug = querySlug || decodeURIComponent(location.pathname.split('/').filter(Boolean).at(-1) || '');
+    const { data: post, error } = await supabase
+      .from('blog_posts')
+      .select('slug,title,excerpt,content,published_at,created_at')
+      .eq('slug', slug)
+      .eq('is_public', true)
+      .lte('published_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (error || !post) {
+      document.querySelector('[data-detail-error]')?.classList.remove('is-hidden');
+    } else {
+      const words = String(post.content || '').trim().split(/\s+/).filter(Boolean).length;
+      const readMinutes = Math.max(1, Math.ceil(words / 300));
+      document.querySelector('[data-post-meta]')!.textContent = `BUILD JOURNAL · ${formatPublicDate(post.published_at || post.created_at)} · ${readMinutes}분`;
+      document.querySelector('[data-post-title]')!.textContent = post.title;
+      document.querySelector('[data-post-excerpt]')!.textContent = post.excerpt || '';
+      document.title = `${post.title} — JAE STUDIO`;
+      const content = document.querySelector('[data-post-content]');
+      const paragraphs = String(post.content || '').split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
+      content?.replaceChildren(...paragraphs.map((text, index) => {
+        const paragraph = document.createElement('p');
+        if (index === 0) paragraph.className = 'lead';
+        paragraph.textContent = text;
+        return paragraph;
+      }));
+    }
+  </script>
+</BaseLayout>

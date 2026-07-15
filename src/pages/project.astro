@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="프로젝트 — JAE STUDIO" description="Jae가 만든 프로젝트의 실제 제작 과정과 결과입니다.">
+  <article class="case-study shell" data-project-detail>
+    <a class="back-link" href="/projects">← 모든 프로젝트</a>
+    <header class="case-header">
+      <div><span class="status" data-project-status>불러오는 중</span><h1 data-project-name>프로젝트</h1><p data-project-summary>프로젝트 기록을 불러오고 있습니다.</p></div>
+      <a class="button button-primary is-hidden" data-project-website rel="noopener noreferrer" target="_blank">사이트 방문 <span>↗</span></a>
+    </header>
+    <div class="case-visual" data-project-visual style="--accent:#86a7ff"><span data-project-visual-name>JAE STUDIO</span></div>
+    <div class="case-metrics">
+      <div><small>제작 기간</small><strong data-project-duration>—</strong></div>
+      <div><small>마케팅 비용</small><strong data-project-marketing>—</strong></div>
+      <div><small>누적 매출</small><strong data-project-revenue>—</strong></div>
+      <div><small>활용 AI</small><strong data-project-ai>—</strong></div>
+    </div>
+    <div class="case-content">
+      <div><span class="eyebrow">THE LESSON</span><h2>이번 프로젝트에서<br />배운 한 가지</h2></div>
+      <blockquote data-project-lesson>프로젝트의 배움을 정리하고 있습니다.</blockquote>
+    </div>
+    <p class="detail-error is-hidden" data-detail-error>프로젝트를 찾을 수 없습니다.</p>
+  </article>
+  <script>
+    import { supabase } from '../lib/supabase';
+    import { projectStatusLabels } from '../lib/content-ui';
+
+    const querySlug = new URLSearchParams(location.search).get('slug');
+    const slug = querySlug || decodeURIComponent(location.pathname.split('/').filter(Boolean).at(-1) || '');
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select('*,project_ai_tools(ai_tools(name))')
+      .eq('slug', slug)
+      .eq('is_public', true)
+      .maybeSingle();
+
+    const setText = (selector: string, value: string) => {
+      const node = document.querySelector(selector);
+      if (node) node.textContent = value;
+    };
+
+    if (error || !project) {
+      document.querySelector('[data-detail-error]')?.classList.remove('is-hidden');
+    } else {
+      const money = new Intl.NumberFormat('ko-KR');
+      const started = project.started_at ? new Date(project.started_at) : null;
+      const launched = project.launched_at ? new Date(project.launched_at) : null;
+      const days = started && launched ? Math.max(1, Math.round((launched.getTime() - started.getTime()) / 86400000)) : 0;
+      const tools = project.project_ai_tools?.map((link: any) => link.ai_tools?.name).filter(Boolean) || [];
+      const status = projectStatusLabels[project.status] || '기록 중';
+      setText('[data-project-status]', status);
+      setText('[data-project-name]', project.name);
+      setText('[data-project-summary]', project.description || project.summary);
+      setText('[data-project-visual-name]', project.name);
+      setText('[data-project-duration]', days ? `${days}일` : '기록 중');
+      setText('[data-project-marketing]', `₩${money.format(Number(project.marketing_cost || 0))}`);
+      setText('[data-project-revenue]', `₩${money.format(Number(project.revenue || 0))}`);
+      setText('[data-project-ai]', tools.length ? tools.join(', ') : '미입력');
+      setText('[data-project-lesson]', project.lesson || '프로젝트의 배움을 정리하고 있습니다.');
+      document.title = `${project.name} — JAE STUDIO`;
+
+      const website = document.querySelector<HTMLAnchorElement>('[data-project-website]');
+      if (website && /^https?:\/\//i.test(project.website_url || '')) {
+        website.href = project.website_url;
+        website.classList.remove('is-hidden');
+      }
+    }
+  </script>
+</BaseLayout>

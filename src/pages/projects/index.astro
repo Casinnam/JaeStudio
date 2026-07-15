@@ -11,8 +11,24 @@ import { projects } from '../../data/site';
   </section>
   <section class="section shell">
     <div class="filter-row"><button class="active">전체</button><button>성공</button><button>성장 중</button><button>실험 중</button><button>종료</button></div>
-    <div class="projects-grid projects-grid-all">
+    <div class="projects-grid projects-grid-all" data-project-list>
       {projects.map((project) => <ProjectCard project={project} />)}
     </div>
   </section>
+  <script>
+    import { supabase } from '../../lib/supabase';
+    import { createProjectCard } from '../../lib/content-ui';
+
+    const { data } = await supabase
+      .from('projects')
+      .select('id,slug,name,summary,description,status,marketing_cost,started_at,launched_at,created_at,project_ai_tools(ai_tools(name))')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+
+    if (data?.length) {
+      document.querySelector('[data-project-list]')?.replaceChildren(
+        ...data.map((project, index) => createProjectCard(project, index))
+      );
+    }
+  </script>
 </BaseLayout>

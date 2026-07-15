@@ -9,7 +9,7 @@ import { posts } from '../../data/site';
     <p>아이디어, 제작, 출시, 첫 결제 그리고 실패까지 솔직하게 씁니다.</p>
   </section>
   <section class="section shell journal-page">
-    <div class="post-list">
+    <div class="post-list" data-post-list>
       {posts.map((post, index) => (
         <a class="post-row" href={`/blog/${post.slug}`}>
           <span class="post-number">0{index + 1}</span>
@@ -19,4 +19,21 @@ import { posts } from '../../data/site';
       ))}
     </div>
   </section>
+  <script>
+    import { supabase } from '../../lib/supabase';
+    import { createPostRow } from '../../lib/content-ui';
+
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id,slug,title,excerpt,published_at,created_at')
+      .eq('is_public', true)
+      .lte('published_at', new Date().toISOString())
+      .order('published_at', { ascending: false });
+
+    if (data?.length) {
+      document.querySelector('[data-post-list]')?.replaceChildren(
+        ...data.map((post, index) => createPostRow(post, index))
+      );
+    }
+  </script>
 </BaseLayout>

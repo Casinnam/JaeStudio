@@ -87,6 +87,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const blogForm = document.querySelector<HTMLFormElement>('#blog-form');
     const money = new Intl.NumberFormat('ko-KR');
 
+    const slugify = (value: string) => value
+      .normalize('NFKD')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const connectSlug = (form: HTMLFormElement | null, sourceName: string) => {
+      const source = form?.elements.namedItem(sourceName) as HTMLInputElement | null;
+      const slug = form?.elements.namedItem('slug') as HTMLInputElement | null;
+      source?.addEventListener('input', () => {
+        if (slug && !slug.dataset.edited) slug.value = slugify(source.value);
+      });
+      slug?.addEventListener('input', () => {
+        slug.dataset.edited = slug.value ? 'true' : '';
+        slug.value = slugify(slug.value);
+      });
+    };
+
+    connectSlug(projectForm, 'name');
+    connectSlug(blogForm, 'title');
+
     const setStatus = (target: Element | null, text: string, error = false) => {
       if (!(target instanceof HTMLElement)) return;
       target.textContent = text;
@@ -190,10 +212,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       event.preventDefault();
       const values = new FormData(projectForm);
       const status = document.querySelector('[data-project-status]');
+      const slug = slugify(String(values.get('slug') || values.get('name') || ''));
+      if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
       const { error } = await supabase.from('projects').insert({
         name: String(values.get('name')),
-        slug: String(values.get('slug')).trim().toLowerCase(),
+        slug,
         summary: String(values.get('summary')),
         website_url: String(values.get('website_url') || '') || null,
         started_at: String(values.get('started_at') || '') || null,
@@ -217,10 +241,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const values = new FormData(blogForm);
       const isPublic = values.get('is_public') === 'on';
       const status = document.querySelector('[data-blog-status]');
+      const slug = slugify(String(values.get('slug') || values.get('title') || ''));
+      if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
       const { error } = await supabase.from('blog_posts').insert({
         title: String(values.get('title')),
-        slug: String(values.get('slug')).trim().toLowerCase(),
+        slug,
         excerpt: String(values.get('excerpt') || '') || null,
         content: String(values.get('content')),
         is_public: isPublic,

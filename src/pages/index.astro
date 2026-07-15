@@ -74,7 +74,7 @@ const yearData = [
       <div><span class="eyebrow">SELECTED WORK</span><h2>최근 프로젝트</h2></div>
       <a class="text-link" href="/projects">전체 프로젝트 <span>↗</span></a>
     </div>
-    <div class="projects-grid">
+    <div class="projects-grid" data-live-project-list>
       {projects.slice(0, 3).map((project, index) => <ProjectCard project={project} featured={index === 0} />)}
     </div>
   </section>
@@ -100,9 +100,9 @@ const yearData = [
       <div class="card-label"><span>연도별 프로젝트</span><small>누적 기록</small></div>
       <div class="bars">
         {yearData.map((item) => (
-          <div class="bar-item">
-            <span class="bar-count">{item.count}</span>
-            <div class="bar" style={`height:${30 + item.count * 10}px`}></div>
+          <div class="bar-item" data-current-year={item.year === '2026' ? 'true' : undefined}>
+            <span class="bar-count" data-year-count={item.year === '2026' ? 'true' : undefined}>{item.count}</span>
+            <div class="bar" data-year-bar={item.year === '2026' ? 'true' : undefined} style={`height:${30 + item.count * 10}px`}></div>
             <small>{item.year}</small>
           </div>
         ))}
@@ -115,7 +115,7 @@ const yearData = [
       <div><span class="eyebrow">BUILD JOURNAL</span><h2>만들며 배운 것들</h2></div>
       <a class="text-link" href="/blog">모든 글 보기 <span>↗</span></a>
     </div>
-    <div class="post-list">
+    <div class="post-list" data-live-post-list>
       {posts.map((post, index) => (
         <a class="post-row" href={`/blog/${post.slug}`}>
           <span class="post-number">0{index + 1}</span>
@@ -144,14 +144,27 @@ const yearData = [
   </section>
   <script>
     import { supabase } from '../lib/supabase';
+    import { createPostRow, createProjectCard } from '../lib/content-ui';
 
     const won = new Intl.NumberFormat('ko-KR');
-    const { data: liveProjects } = await supabase
-      .from('projects')
-      .select('status,revenue,marketing_cost,started_at,launched_at,project_ai_tools(ai_tools(name))')
-      .eq('is_public', true);
+    const [{ data: liveProjects }, { data: livePosts }] = await Promise.all([
+      supabase
+        .from('projects')
+        .select('id,slug,name,summary,description,status,revenue,marketing_cost,started_at,launched_at,created_at,project_ai_tools(ai_tools(name))')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('blog_posts')
+        .select('id,slug,title,excerpt,published_at,created_at')
+        .eq('is_public', true)
+        .lte('published_at', new Date().toISOString())
+        .order('published_at', { ascending: false })
+    ]);
 
     if (liveProjects?.length) {
+      document.querySelector('[data-live-project-list]')?.replaceChildren(
+        ...liveProjects.slice(0, 3).map((project, index) => createProjectCard(project, index, index === 0))
+      );
       const completed = liveProjects.filter((project) => ['successful', 'closed'].includes(project.status));
       const successful = completed.filter((project) => project.status === 'successful').length;
       const successRate = completed.length ? Math.round(successful / completed.length * 100) : 0;
@@ -167,13 +180,22 @@ const yearData = [
       const marketing = liveProjects.reduce((sum, project) => sum + Number(project.marketing_cost || 0), 0);
 
       document.querySelectorAll('[data-live-success]').forEach((node) => node.textContent = `${successRate}%`);
-      document.querySelectorAll('[data-live-failure]').forEach((node) => node.textContent = `${100 - successRate}%`);
+      const failureRate = completed.length ? 100 - successRate : 0;
+      document.querySelectorAll('[data-live-failure]').forEach((node) => node.textContent = `${failureRate}%`);
       document.querySelector<HTMLElement>('[data-live-donut]')?.style.setProperty('--success', `${successRate * 3.6}deg`);
       document.querySelector('[data-live-revenue]')!.textContent = `₩${won.format(revenue)}`;
       document.querySelector('[data-live-projects]')!.textContent = String(liveProjects.length).padStart(2, '0');
       document.querySelector('[data-live-days]')!.textContent = String(averageDays);
       document.querySelector('[data-live-marketing]')!.textContent = `₩${won.format(marketing)}`;
       document.querySelector('[data-live-ai]')!.textContent = String(tools.size).padStart(2, '0');
+      document.querySelector('[data-year-count]')!.textContent = String(liveProjects.length);
+      document.querySelector<HTMLElement>('[data-year-bar]')?.style.setProperty('height', `${30 + liveProjects.length * 10}px`);
+    }
+
+    if (livePosts?.length) {
+      document.querySelector('[data-live-post-list]')?.replaceChildren(
+        ...livePosts.slice(0, 3).map((post, index) => createPostRow(post, index))
+      );
     }
   </script>
 </BaseLayout>
