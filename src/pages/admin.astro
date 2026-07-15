@@ -40,31 +40,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
 
       <section class="admin-panel" id="project-editor">
-        <div class="panel-heading"><div><small>PROJECT EDITOR</small><h2>프로젝트 등록</h2></div><span class="live-badge">Supabase 연결</span></div>
+        <div class="panel-heading"><div><small>PROJECT EDITOR</small><h2 data-project-form-title>프로젝트 등록</h2></div><span class="live-badge">Supabase 연결</span></div>
         <form class="project-form" id="project-form">
           <label>프로젝트 이름<input name="name" placeholder="예: Focus Flow" required /></label>
           <label>주소용 영문 이름<input name="slug" placeholder="예: focus-flow" required /></label>
           <label class="wide">한 줄 소개<input name="summary" placeholder="무엇을 해결하는 서비스인가요?" required /></label>
           <label class="wide">웹사이트 주소<input name="website_url" type="url" placeholder="https://" /></label>
+          <label class="wide">대표 이미지 주소<input name="cover_image_url" type="url" placeholder="비워두면 웹사이트 첫 화면 미리보기를 사용합니다." /></label>
           <label>시작일<input name="started_at" type="date" /></label><label>출시일<input name="launched_at" type="date" /></label>
           <label>마케팅 비용<input name="marketing_cost" type="number" min="0" value="0" /></label><label>누적 매출<input name="revenue" type="number" min="0" value="0" /></label>
           <label>월 반복 매출<input name="recurring_revenue" type="number" min="0" value="0" /></label><label>유료 고객 수<input name="paid_customers" type="number" min="0" value="0" /></label>
           <label>상태<select name="status"><option value="experimenting">실험 중</option><option value="validating">수요 검증</option><option value="growing">성장 중</option><option value="successful">성공</option><option value="closed">종료</option></select></label>
           <label class="check-label"><input name="is_public" type="checkbox" checked /> 공개하기</label>
           <label class="wide">배운 점<textarea name="lesson" rows="4" placeholder="성공하거나 실패한 이유를 기록하세요."></textarea></label>
-          <div class="wide admin-actions"><p class="form-status" data-project-status></p><button class="button button-primary" type="submit">프로젝트 저장</button></div>
+          <div class="wide admin-actions"><p class="form-status" data-project-status></p><div><button class="button button-outline is-hidden" data-project-cancel type="button">수정 취소</button><button class="button button-primary" data-project-submit type="submit">프로젝트 저장</button></div></div>
         </form>
         <div class="admin-record-list" data-project-list></div>
       </section>
 
       <section class="admin-panel" id="blog-editor">
-        <div class="panel-heading"><div><small>BLOG EDITOR</small><h2>새 글 작성</h2></div></div>
+        <div class="panel-heading"><div><small>BLOG EDITOR</small><h2 data-blog-form-title>새 글 작성</h2></div></div>
         <form class="project-form" id="blog-form">
           <label>제목<input name="title" required /></label><label>주소용 영문 이름<input name="slug" placeholder="my-build-log" required /></label>
           <label class="wide">요약<input name="excerpt" /></label>
           <label class="wide">본문<textarea name="content" rows="10" required></textarea></label>
           <label class="check-label"><input name="is_public" type="checkbox" checked /> 바로 공개</label>
-          <div class="wide admin-actions"><p class="form-status" data-blog-status></p><button class="button button-primary" type="submit">글 저장</button></div>
+          <div class="wide admin-actions"><p class="form-status" data-blog-status></p><div><button class="button button-outline is-hidden" data-blog-cancel type="button">수정 취소</button><button class="button button-primary" data-blog-submit type="submit">글 저장</button></div></div>
         </form>
         <div class="admin-record-list" data-blog-list></div>
       </section>
@@ -86,6 +87,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const projectForm = document.querySelector<HTMLFormElement>('#project-form');
     const blogForm = document.querySelector<HTMLFormElement>('#blog-form');
     const money = new Intl.NumberFormat('ko-KR');
+    let cachedProjects: any[] = [];
+    let cachedPosts: any[] = [];
+    let editingProjectId: string | null = null;
+    let editingPostId: string | null = null;
 
     const slugify = (value: string) => value
       .normalize('NFKD')
@@ -114,6 +119,65 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       target.textContent = text;
       target.classList.toggle('status-error', error);
     };
+
+    const setFormValue = (form: HTMLFormElement | null, name: string, value: unknown) => {
+      const field = form?.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      if (!field) return;
+      if (field instanceof HTMLInputElement && field.type === 'checkbox') field.checked = Boolean(value);
+      else field.value = value == null ? '' : String(value);
+    };
+
+    const finishProjectEdit = () => {
+      editingProjectId = null;
+      projectForm?.reset();
+      const slug = projectForm?.elements.namedItem('slug') as HTMLInputElement | null;
+      if (slug) slug.dataset.edited = '';
+      document.querySelector('[data-project-form-title]')!.textContent = '프로젝트 등록';
+      document.querySelector('[data-project-submit]')!.textContent = '프로젝트 저장';
+      document.querySelector('[data-project-cancel]')?.classList.add('is-hidden');
+    };
+
+    const finishPostEdit = () => {
+      editingPostId = null;
+      blogForm?.reset();
+      const slug = blogForm?.elements.namedItem('slug') as HTMLInputElement | null;
+      if (slug) slug.dataset.edited = '';
+      document.querySelector('[data-blog-form-title]')!.textContent = '새 글 작성';
+      document.querySelector('[data-blog-submit]')!.textContent = '글 저장';
+      document.querySelector('[data-blog-cancel]')?.classList.add('is-hidden');
+    };
+
+    const editProject = (id: string) => {
+      const project = cachedProjects.find((item) => item.id === id);
+      if (!project) return;
+      editingProjectId = id;
+      ['name', 'slug', 'summary', 'website_url', 'cover_image_url', 'started_at', 'launched_at', 'marketing_cost', 'revenue', 'recurring_revenue', 'paid_customers', 'status', 'lesson']
+        .forEach((name) => setFormValue(projectForm, name, project[name]));
+      setFormValue(projectForm, 'is_public', project.is_public);
+      const slug = projectForm?.elements.namedItem('slug') as HTMLInputElement | null;
+      if (slug) slug.dataset.edited = 'true';
+      document.querySelector('[data-project-form-title]')!.textContent = '프로젝트 수정';
+      document.querySelector('[data-project-submit]')!.textContent = '수정 내용 저장';
+      document.querySelector('[data-project-cancel]')?.classList.remove('is-hidden');
+      document.querySelector('#project-editor')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const editPost = (id: string) => {
+      const post = cachedPosts.find((item) => item.id === id);
+      if (!post) return;
+      editingPostId = id;
+      ['title', 'slug', 'excerpt', 'content'].forEach((name) => setFormValue(blogForm, name, post[name]));
+      setFormValue(blogForm, 'is_public', post.is_public);
+      const slug = blogForm?.elements.namedItem('slug') as HTMLInputElement | null;
+      if (slug) slug.dataset.edited = 'true';
+      document.querySelector('[data-blog-form-title]')!.textContent = '블로그 글 수정';
+      document.querySelector('[data-blog-submit]')!.textContent = '수정 내용 저장';
+      document.querySelector('[data-blog-cancel]')?.classList.remove('is-hidden');
+      document.querySelector('#blog-editor')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    document.querySelector('[data-project-cancel]')?.addEventListener('click', finishProjectEdit);
+    document.querySelector('[data-blog-cancel]')?.addEventListener('click', finishPostEdit);
 
     const row = (title: string, meta: string, actions: Array<{ label: string; action: string; id: string }>) => {
       const item = document.createElement('div');
@@ -184,6 +248,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       ]);
 
       const projectRows = projects || [];
+      cachedProjects = projectRows;
+      cachedPosts = posts || [];
       const finished = projectRows.filter((project) => ['successful', 'closed'].includes(project.status));
       const success = finished.filter((project) => project.status === 'successful').length;
       const revenue = projectRows.reduce((sum, project) => sum + Number(project.revenue || 0), 0);
@@ -193,11 +259,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-message-count]')!.textContent = String(messages?.length || 0);
 
       const projectList = document.querySelector('[data-project-list]');
-      projectList?.replaceChildren(...projectRows.map((project) => row(project.name, `${project.status} · ₩${money.format(project.revenue)}`, [{ label: '삭제', action: 'delete-project', id: project.id }])));
+      projectList?.replaceChildren(...projectRows.map((project) => row(project.name, `${project.status} · ₩${money.format(project.revenue)}`, [
+        { label: '수정', action: 'edit-project', id: project.id },
+        { label: '삭제', action: 'delete-project', id: project.id }
+      ])));
       if (projectList && !projectRows.length) projectList.innerHTML = '<p class="empty-state">등록된 프로젝트가 없습니다.</p>';
 
       const blogList = document.querySelector('[data-blog-list]');
-      blogList?.replaceChildren(...(posts || []).map((post) => row(post.title, post.is_public ? '공개' : '비공개', [{ label: '삭제', action: 'delete-post', id: post.id }])));
+      blogList?.replaceChildren(...cachedPosts.map((post) => row(post.title, post.is_public ? '공개' : '비공개', [
+        { label: '수정', action: 'edit-post', id: post.id },
+        { label: '삭제', action: 'delete-post', id: post.id }
+      ])));
       if (blogList && !posts?.length) blogList.innerHTML = '<p class="empty-state">등록된 글이 없습니다.</p>';
 
       const messageList = document.querySelector('[data-message-list]');
@@ -215,11 +287,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const slug = slugify(String(values.get('slug') || values.get('name') || ''));
       if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
-      const { error } = await supabase.from('projects').insert({
+      const projectPayload = {
         name: String(values.get('name')),
         slug,
         summary: String(values.get('summary')),
         website_url: String(values.get('website_url') || '') || null,
+        cover_image_url: String(values.get('cover_image_url') || '') || null,
         started_at: String(values.get('started_at') || '') || null,
         launched_at: String(values.get('launched_at') || '') || null,
         marketing_cost: Number(values.get('marketing_cost') || 0),
@@ -228,11 +301,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         paid_customers: Number(values.get('paid_customers') || 0),
         status: String(values.get('status')),
         lesson: String(values.get('lesson') || '') || null,
-        is_public: values.get('is_public') === 'on'
-      });
+        is_public: values.get('is_public') === 'on',
+        updated_at: new Date().toISOString()
+      };
+      const { error } = editingProjectId
+        ? await supabase.from('projects').update(projectPayload).eq('id', editingProjectId)
+        : await supabase.from('projects').insert(projectPayload);
       if (error) return setStatus(status, `저장 실패: ${error.message}`, true);
-      projectForm.reset();
-      setStatus(status, '프로젝트가 저장되었습니다.');
+      const wasEditing = Boolean(editingProjectId);
+      finishProjectEdit();
+      setStatus(status, wasEditing ? '프로젝트 수정이 완료되었습니다.' : '프로젝트가 저장되었습니다.');
       await loadDashboard();
     });
 
@@ -244,17 +322,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const slug = slugify(String(values.get('slug') || values.get('title') || ''));
       if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
-      const { error } = await supabase.from('blog_posts').insert({
+      const existingPost = cachedPosts.find((post) => post.id === editingPostId);
+      const postPayload = {
         title: String(values.get('title')),
         slug,
         excerpt: String(values.get('excerpt') || '') || null,
         content: String(values.get('content')),
         is_public: isPublic,
-        published_at: isPublic ? new Date().toISOString() : null
-      });
+        published_at: isPublic ? (existingPost?.published_at || new Date().toISOString()) : null,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = editingPostId
+        ? await supabase.from('blog_posts').update(postPayload).eq('id', editingPostId)
+        : await supabase.from('blog_posts').insert(postPayload);
       if (error) return setStatus(status, `저장 실패: ${error.message}`, true);
-      blogForm.reset();
-      setStatus(status, '글이 저장되었습니다.');
+      const wasEditing = Boolean(editingPostId);
+      finishPostEdit();
+      setStatus(status, wasEditing ? '블로그 글 수정이 완료되었습니다.' : '글이 저장되었습니다.');
       await loadDashboard();
     });
 
@@ -262,6 +346,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
       if (!button?.dataset.id || !button.dataset.action) return;
       const { id, action } = button.dataset;
+      if (action === 'edit-project') return editProject(id);
+      if (action === 'edit-post') return editPost(id);
       if (action === 'approve-message') await supabase.from('support_messages').update({ is_approved: true }).eq('id', id);
       if (action === 'delete-message') await supabase.from('support_messages').delete().eq('id', id);
       if (action === 'delete-project') await supabase.from('projects').delete().eq('id', id);

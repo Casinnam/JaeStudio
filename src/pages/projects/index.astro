@@ -21,7 +21,7 @@ import { projects } from '../../data/site';
 
     const { data } = await supabase
       .from('projects')
-      .select('id,slug,name,summary,description,status,marketing_cost,started_at,launched_at,created_at,project_ai_tools(ai_tools(name))')
+      .select('id,slug,name,summary,description,status,marketing_cost,started_at,launched_at,created_at,website_url,cover_image_url,project_ai_tools(ai_tools(name))')
       .eq('is_public', true)
       .order('created_at', { ascending: false });
 

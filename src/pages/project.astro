@@ -8,7 +8,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div><span class="status" data-project-status>불러오는 중</span><h1 data-project-name>프로젝트</h1><p data-project-summary>프로젝트 기록을 불러오고 있습니다.</p></div>
       <a class="button button-primary is-hidden" data-project-website rel="noopener noreferrer" target="_blank">사이트 방문 <span>↗</span></a>
     </header>
-    <div class="case-visual" data-project-visual style="--accent:#86a7ff"><span data-project-visual-name>JAE STUDIO</span></div>
+    <div class="case-visual" data-project-visual style="--accent:#86a7ff"><img class="is-hidden" data-project-cover alt="" /><span data-project-visual-name>JAE STUDIO</span></div>
     <div class="case-metrics">
       <div><small>제작 기간</small><strong data-project-duration>—</strong></div>
       <div><small>마케팅 비용</small><strong data-project-marketing>—</strong></div>
@@ -23,7 +23,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </article>
   <script>
     import { supabase } from '../lib/supabase';
-    import { projectStatusLabels } from '../lib/content-ui';
+    import { projectCoverUrl, projectStatusLabels } from '../lib/content-ui';
 
     const querySlug = new URLSearchParams(location.search).get('slug');
     const slug = querySlug || decodeURIComponent(location.pathname.split('/').filter(Boolean).at(-1) || '');
@@ -58,6 +58,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       setText('[data-project-ai]', tools.length ? tools.join(', ') : '미입력');
       setText('[data-project-lesson]', project.lesson || '프로젝트의 배움을 정리하고 있습니다.');
       document.title = `${project.name} — JAE STUDIO`;
+
+      const cover = document.querySelector<HTMLImageElement>('[data-project-cover]');
+      const coverUrl = projectCoverUrl(project);
+      if (cover && coverUrl) {
+        cover.src = coverUrl;
+        cover.alt = `${project.name} 웹사이트 첫 화면`;
+        cover.classList.remove('is-hidden');
+        document.querySelector('[data-project-visual]')?.classList.add('has-preview');
+        cover.addEventListener('error', () => {
+          cover.classList.add('is-hidden');
+          document.querySelector('[data-project-visual]')?.classList.remove('has-preview');
+        }, { once: true });
+      }
 
       const website = document.querySelector<HTMLAnchorElement>('[data-project-website]');
       if (website && /^https?:\/\//i.test(project.website_url || '')) {

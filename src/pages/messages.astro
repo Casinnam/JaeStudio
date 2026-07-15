@@ -15,7 +15,7 @@ import { messages } from '../data/site';
         <p class="form-status" aria-live="polite"></p>
       </form>
     </div>
-    <div class="message-wall">
+    <div class="message-wall" data-message-wall>
       {messages.concat(messages.slice(0, 2)).map((message, index) => (
         <blockquote style={`--rotate:${index % 3 === 0 ? '-1.5deg' : index % 3 === 1 ? '1deg' : '-.4deg'}`}><span>“</span><p>{message.text}</p><footer>— {message.name}</footer></blockquote>
       ))}
@@ -23,9 +23,21 @@ import { messages } from '../data/site';
   </section>
   <script>
     import { supabase } from '../lib/supabase';
+    import { createMessageNote } from '../lib/content-ui';
 
     const form = document.querySelector<HTMLFormElement>('#message-form');
     const status = document.querySelector<HTMLElement>('.form-status');
+    const { data: approvedMessages } = await supabase
+      .from('support_messages')
+      .select('id,display_name,message,created_at')
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+
+    if (approvedMessages?.length) {
+      document.querySelector('[data-message-wall]')?.replaceChildren(
+        ...approvedMessages.map((message, index) => createMessageNote(message, index))
+      );
+    }
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');

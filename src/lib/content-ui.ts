@@ -9,6 +9,18 @@ export const projectStatusLabels: Record<string, string> = {
 const accents = ['#86a7ff', '#f7a765', '#ff8c78', '#7fc7ac', '#b9a4f7'];
 const money = new Intl.NumberFormat('ko-KR');
 
+const normalizedSlug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+export const projectCoverUrl = (project: any) => {
+  if (/^https?:\/\//i.test(project.cover_image_url || '')) return project.cover_image_url;
+  const slug = normalizedSlug(String(project.slug || ''));
+  if (slug === 'everything-convert') return '/project-covers/everything-convert.png';
+  if (/^https?:\/\//i.test(project.website_url || '')) {
+    return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(project.website_url)}?w=1200&h=700`;
+  }
+  return null;
+};
+
 export const slugPath = (section: 'projects' | 'blog', slug: string) =>
   `/${section}/${encodeURIComponent(slug)}`;
 
@@ -38,6 +50,19 @@ export function createProjectCard(project: any, index: number, featured = false)
   const visual = element('a', 'project-visual');
   visual.href = href;
   visual.style.setProperty('--accent', accent);
+  const coverUrl = projectCoverUrl(project);
+  if (coverUrl) {
+    const image = element('img', 'project-preview-image');
+    image.src = coverUrl;
+    image.alt = `${project.name} 웹사이트 첫 화면`;
+    image.loading = index > 0 ? 'lazy' : 'eager';
+    image.addEventListener('error', () => {
+      visual.classList.remove('has-preview');
+      image.remove();
+    }, { once: true });
+    visual.classList.add('has-preview');
+    visual.append(image);
+  }
 
   const windowBar = element('div', 'mini-window');
   windowBar.append(element('span'), element('span'), element('span'));
@@ -108,3 +133,15 @@ export function createPostRow(post: any, index: number) {
   return link;
 }
 
+export function createMessageNote(message: any, index: number) {
+  const quote = element('blockquote');
+  quote.style.setProperty('--rotate', index % 3 === 0 ? '-1.5deg' : index % 3 === 1 ? '1deg' : '-.4deg');
+  const mark = element('span');
+  mark.textContent = '“';
+  const copy = element('p');
+  copy.textContent = message.message;
+  const footer = element('footer');
+  footer.textContent = `— ${message.display_name}`;
+  quote.append(mark, copy, footer);
+  return quote;
+}
