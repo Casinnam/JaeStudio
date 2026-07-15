@@ -1,14 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import OceanScene from '../components/OceanScene.astro';
-import ProjectCard from '../components/ProjectCard.astro';
-import { projects, posts, messages, metrics, formatWon } from '../data/site';
 
 const yearData = [
   { year: '2023', count: 2 },
   { year: '2024', count: 5 },
   { year: '2025', count: 8 },
-  { year: '2026', count: metrics.projectCount }
+  { year: '2026', count: null }
 ];
 ---
 
@@ -43,27 +41,27 @@ const yearData = [
     <div class="metrics-grid">
       <article class="metric-card metric-dark">
         <span>누적 매출</span>
-        <strong data-live-revenue>{formatWon(metrics.revenue)}</strong>
+        <strong data-live-revenue>—</strong>
         <small>공개 프로젝트 기준</small>
       </article>
       <article class="metric-card">
         <span>올해 프로젝트</span>
-        <strong data-live-projects>{String(metrics.projectCount).padStart(2, '0')}</strong>
+        <strong data-live-projects>—</strong>
         <small>목표 12개 중</small>
       </article>
       <article class="metric-card">
         <span>평균 제작 기간</span>
-        <strong><span data-live-days>{metrics.averageDays}</span><i>일</i></strong>
+        <strong><span data-live-days>—</span><i>일</i></strong>
         <small>아이디어 → 출시</small>
       </article>
       <article class="metric-card metric-coral">
         <span>총 마케팅 비용</span>
-        <strong data-live-marketing>{formatWon(metrics.marketingCost)}</strong>
+        <strong data-live-marketing>—</strong>
         <small>광고와 콘텐츠 포함</small>
       </article>
       <article class="metric-card">
         <span>활용한 AI</span>
-        <strong data-live-ai>{String(metrics.aiToolCount).padStart(2, '0')}</strong>
+        <strong data-live-ai>—</strong>
         <small>실제 제작에 사용</small>
       </article>
     </div>
@@ -75,7 +73,16 @@ const yearData = [
       <a class="text-link" href="/projects">전체 프로젝트 <span>↗</span></a>
     </div>
     <div class="projects-grid" data-live-project-list>
-      {projects.slice(0, 3).map((project, index) => <ProjectCard project={project} featured={index === 0} />)}
+      {[0, 1, 2].map((index) => (
+        <article class={`project-card skeleton-card${index === 0 ? ' project-card-featured' : ''}`} aria-hidden="true">
+          <div class="project-visual"></div>
+          <div class="project-card-body">
+            <span class="skeleton-block" style="width:38%;height:24px"></span>
+            <span class="skeleton-block" style="width:85%;height:15px;margin-top:16px"></span>
+            <span class="skeleton-block" style="width:60%;height:15px;margin-top:8px"></span>
+          </div>
+        </article>
+      ))}
     </div>
   </section>
 
@@ -89,10 +96,10 @@ const yearData = [
     <div class="chart-card donut-card">
       <div class="card-label"><span>프로젝트 결과</span><small>완료 프로젝트</small></div>
       <div class="donut-wrap">
-        <div class="donut" data-live-donut style={`--success:${metrics.successRate * 3.6}deg`}><span><b data-live-success>{metrics.successRate}%</b>SUCCESS</span></div>
+        <div class="donut is-loading" data-live-donut style="--success:0deg"><span><b data-live-success>—</b>SUCCESS</span></div>
         <div class="legend">
-          <p><i class="dot dot-blue"></i><span>성공</span><b data-live-success>{metrics.successRate}%</b></p>
-          <p><i class="dot dot-coral"></i><span>실패</span><b data-live-failure>{metrics.failureRate}%</b></p>
+          <p><i class="dot dot-blue"></i><span>성공</span><b data-live-success>—</b></p>
+          <p><i class="dot dot-coral"></i><span>실패</span><b data-live-failure>—</b></p>
         </div>
       </div>
     </div>
@@ -101,8 +108,8 @@ const yearData = [
       <div class="bars">
         {yearData.map((item) => (
           <div class="bar-item" data-current-year={item.year === '2026' ? 'true' : undefined}>
-            <span class="bar-count" data-year-count={item.year === '2026' ? 'true' : undefined}>{item.count}</span>
-            <div class="bar" data-year-bar={item.year === '2026' ? 'true' : undefined} style={`height:${30 + item.count * 10}px`}></div>
+            <span class="bar-count" data-year-count={item.year === '2026' ? 'true' : undefined}>{item.count ?? '—'}</span>
+            <div class="bar" data-year-bar={item.year === '2026' ? 'true' : undefined} style={`height:${30 + (item.count ?? 0) * 10}px`}></div>
             <small>{item.year}</small>
           </div>
         ))}
@@ -116,13 +123,16 @@ const yearData = [
       <a class="text-link" href="/blog">모든 글 보기 <span>↗</span></a>
     </div>
     <div class="post-list" data-live-post-list>
-      {posts.map((post, index) => (
-        <a class="post-row" href={`/blog/${post.slug}`}>
-          <span class="post-number">0{index + 1}</span>
-          <div><small>{post.category} · {post.date}</small><h3>{post.title}</h3></div>
-          <p>{post.excerpt}</p>
-          <span class="round-link">↗</span>
-        </a>
+      {[0, 1, 2].map(() => (
+        <div class="post-row" aria-hidden="true">
+          <span class="skeleton-block" style="width:32px;height:20px"></span>
+          <div>
+            <span class="skeleton-block" style="width:150px;height:12px"></span>
+            <span class="skeleton-block" style="width:70%;height:26px;margin-top:12px"></span>
+          </div>
+          <span class="skeleton-block" style="width:85%;height:15px"></span>
+          <span></span>
+        </div>
       ))}
     </div>
   </section>
@@ -135,41 +145,36 @@ const yearData = [
       <a class="button button-primary" href="/messages">응원 메시지 남기기 <span>♡</span></a>
     </div>
     <div class="message-stack" data-live-message-list>
-      {messages.map((message, index) => (
-        <blockquote style={`--rotate:${index % 2 ? '1.5deg' : '-1deg'}`}>
-          <span>“</span><p>{message.text}</p><footer>— {message.name}</footer>
+      {[0, 1, 2].map((index) => (
+        <blockquote class="skeleton-note" style={`--rotate:${index % 2 ? '1.5deg' : '-1deg'}`} aria-hidden="true">
+          <span>“</span>
+          <p><span class="skeleton-block" style="width:100%;height:14px"></span><span class="skeleton-block" style="width:70%;height:14px;margin-top:9px"></span></p>
+          <footer><span class="skeleton-block" style="width:60px;height:11px"></span></footer>
         </blockquote>
       ))}
     </div>
   </section>
   <script>
-    import { supabase } from '../lib/supabase';
     import { createMessageNote, createPostRow, createProjectCard } from '../lib/content-ui';
-    import { cacheProject } from '../lib/public-data';
+    import {
+      cacheList,
+      cacheProject,
+      fetchPublicMessages,
+      fetchPublicPosts,
+      fetchPublicProjects,
+      readCachedList
+    } from '../lib/public-data';
 
     const won = new Intl.NumberFormat('ko-KR');
-    const [{ data: liveProjects }, { data: livePosts }, { data: liveMessages }] = await Promise.all([
-      supabase
-        .from('projects')
-        .select('id,slug,name,summary,description,status,revenue,marketing_cost,started_at,launched_at,created_at,website_url,cover_image_url,lesson,project_ai_tools(ai_tools(name))')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('blog_posts')
-        .select('id,slug,title,excerpt,cover_image_url,published_at,created_at')
-        .eq('is_public', true)
-        .lte('published_at', new Date().toISOString())
-        .order('published_at', { ascending: false }),
-      supabase
-        .from('support_messages')
-        .select('id,display_name,message,created_at')
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false })
-        .limit(3)
-    ]);
 
-    if (liveProjects?.length) {
-      liveProjects.forEach(cacheProject);
+    const showNotice = (selector: string, message: string) => {
+      const notice = document.createElement('p');
+      notice.className = 'list-empty';
+      notice.textContent = message;
+      document.querySelector(selector)?.replaceChildren(notice);
+    };
+
+    const renderProjects = (liveProjects: any[]) => {
       document.querySelector('[data-live-project-list]')?.replaceChildren(
         ...liveProjects.slice(0, 3).map((project, index) => createProjectCard(project, index, index === 0))
       );
@@ -190,7 +195,9 @@ const yearData = [
       document.querySelectorAll('[data-live-success]').forEach((node) => node.textContent = `${successRate}%`);
       const failureRate = completed.length ? 100 - successRate : 0;
       document.querySelectorAll('[data-live-failure]').forEach((node) => node.textContent = `${failureRate}%`);
-      document.querySelector<HTMLElement>('[data-live-donut]')?.style.setProperty('--success', `${successRate * 3.6}deg`);
+      const donut = document.querySelector<HTMLElement>('[data-live-donut]');
+      donut?.style.setProperty('--success', `${successRate * 3.6}deg`);
+      donut?.classList.remove('is-loading');
       document.querySelector('[data-live-revenue]')!.textContent = `₩${won.format(revenue)}`;
       document.querySelector('[data-live-projects]')!.textContent = String(liveProjects.length).padStart(2, '0');
       document.querySelector('[data-live-days]')!.textContent = String(averageDays);
@@ -198,18 +205,53 @@ const yearData = [
       document.querySelector('[data-live-ai]')!.textContent = String(tools.size).padStart(2, '0');
       document.querySelector('[data-year-count]')!.textContent = String(liveProjects.length);
       document.querySelector<HTMLElement>('[data-year-bar]')?.style.setProperty('height', `${30 + liveProjects.length * 10}px`);
-    }
+    };
 
-    if (livePosts?.length) {
+    const renderPosts = (livePosts: any[]) => {
       document.querySelector('[data-live-post-list]')?.replaceChildren(
         ...livePosts.slice(0, 3).map((post, index) => createPostRow(post, index))
       );
+    };
+
+    const renderMessages = (liveMessages: any[]) => {
+      document.querySelector('[data-live-message-list]')?.replaceChildren(
+        ...liveMessages.slice(0, 3).map((message, index) => createMessageNote(message, index))
+      );
+    };
+
+    const cachedProjects = readCachedList('projects');
+    if (cachedProjects?.length) renderProjects(cachedProjects);
+    const cachedPosts = readCachedList('posts');
+    if (cachedPosts?.length) renderPosts(cachedPosts);
+    const cachedMessages = readCachedList('messages');
+    if (cachedMessages?.length) renderMessages(cachedMessages);
+
+    const [liveProjects, livePosts, liveMessages] = await Promise.all([
+      fetchPublicProjects().catch(() => null),
+      fetchPublicPosts(3).catch(() => null),
+      fetchPublicMessages(3).catch(() => null)
+    ]);
+
+    if (liveProjects?.length) {
+      liveProjects.forEach(cacheProject);
+      cacheList('projects', liveProjects);
+      renderProjects(liveProjects);
+    } else if (!cachedProjects?.length) {
+      showNotice('[data-live-project-list]', liveProjects ? '아직 공개된 프로젝트가 없습니다.' : '프로젝트를 불러오지 못했습니다.');
+    }
+
+    if (livePosts?.length) {
+      cacheList('posts', livePosts);
+      renderPosts(livePosts);
+    } else if (!cachedPosts?.length) {
+      showNotice('[data-live-post-list]', livePosts ? '아직 공개된 글이 없습니다.' : '글을 불러오지 못했습니다.');
     }
 
     if (liveMessages?.length) {
-      document.querySelector('[data-live-message-list]')?.replaceChildren(
-        ...liveMessages.map((message, index) => createMessageNote(message, index))
-      );
+      cacheList('messages', liveMessages);
+      renderMessages(liveMessages);
+    } else if (!cachedMessages?.length) {
+      showNotice('[data-live-message-list]', liveMessages ? '첫 번째 응원 메시지를 남겨주세요 ♡' : '메시지를 불러오지 못했습니다.');
     }
   </script>
 </BaseLayout>

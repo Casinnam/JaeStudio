@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ProjectCard from '../../components/ProjectCard.astro';
-import { projects } from '../../data/site';
 ---
 <BaseLayout title="프로젝트 — JAE STUDIO" description="Jae가 만든 디지털 프로젝트와 실제 성과를 확인하세요.">
   <section class="page-hero shell compact-hero">
@@ -12,20 +10,46 @@ import { projects } from '../../data/site';
   <section class="section shell">
     <div class="filter-row"><button class="active">전체</button><button>성공</button><button>성장 중</button><button>실험 중</button><button>종료</button></div>
     <div class="projects-grid projects-grid-all" data-project-list>
-      {projects.map((project) => <ProjectCard project={project} />)}
+      {[0, 1].map(() => (
+        <article class="project-card skeleton-card" aria-hidden="true">
+          <div class="project-visual"></div>
+          <div class="project-card-body">
+            <span class="skeleton-block" style="width:38%;height:24px"></span>
+            <span class="skeleton-block" style="width:85%;height:15px;margin-top:16px"></span>
+            <span class="skeleton-block" style="width:60%;height:15px;margin-top:8px"></span>
+          </div>
+        </article>
+      ))}
     </div>
   </section>
   <script>
     import { createProjectCard } from '../../lib/content-ui';
-    import { cacheProject, fetchPublicProjects } from '../../lib/public-data';
+    import { cacheList, cacheProject, fetchPublicProjects, readCachedList } from '../../lib/public-data';
 
-    const data = await fetchPublicProjects().catch(() => []);
+    const list = document.querySelector('[data-project-list]');
+    const render = (projects: any[]) =>
+      list?.replaceChildren(...projects.map((project, index) => createProjectCard(project, index)));
+    const showNotice = (message: string) => {
+      const notice = document.createElement('p');
+      notice.className = 'list-empty';
+      notice.textContent = message;
+      list?.replaceChildren(notice);
+    };
 
-    if (data?.length) {
-      data.forEach(cacheProject);
-      document.querySelector('[data-project-list]')?.replaceChildren(
-        ...data.map((project, index) => createProjectCard(project, index))
-      );
+    const cached = readCachedList('projects');
+    if (cached?.length) render(cached);
+
+    try {
+      const data = await fetchPublicProjects();
+      if (data?.length) {
+        data.forEach(cacheProject);
+        cacheList('projects', data);
+        render(data);
+      } else if (!cached?.length) {
+        showNotice('아직 공개된 프로젝트가 없습니다.');
+      }
+    } catch {
+      if (!cached?.length) showNotice('프로젝트를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     }
   </script>
 </BaseLayout>
