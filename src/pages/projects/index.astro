@@ -8,7 +8,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <p>수익이 난 프로젝트도, 조용히 종료한 실험도 같은 무게로 기록합니다.</p>
   </section>
   <section class="section shell">
-    <div class="filter-row"><button class="active">전체</button><button>성공</button><button>성장 중</button><button>실험 중</button><button>종료</button></div>
+    <div class="filter-row" data-filter-row>
+      <button class="active" data-filter="all">전체</button>
+      <button data-filter="successful">성공</button>
+      <button data-filter="growing">성장 중</button>
+      <button data-filter="experimenting">실험 중</button>
+      <button data-filter="validating">수요 검증</button>
+      <button data-filter="closed">종료</button>
+    </div>
     <div class="projects-grid projects-grid-all" data-project-list>
       {[0, 1].map(() => (
         <article class="project-card skeleton-card" aria-hidden="true">
@@ -27,6 +34,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     import { cacheList, cacheProject, fetchPublicProjects, readCachedList } from '../../lib/public-data';
 
     const list = document.querySelector('[data-project-list]');
+    const filterButtons = document.querySelectorAll<HTMLButtonElement>('[data-filter-row] button');
+    let allProjects: any[] = [];
+    let activeFilter = 'all';
+
     const render = (projects: any[]) =>
       list?.replaceChildren(...projects.map((project, index) => createProjectCard(project, index)));
     const showNotice = (message: string) => {
@@ -36,20 +47,38 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       list?.replaceChildren(notice);
     };
 
+    const applyFilter = () => {
+      const filtered = activeFilter === 'all'
+        ? allProjects
+        : allProjects.filter((project) => project.status === activeFilter);
+      if (filtered.length) render(filtered);
+      else showNotice('해당 상태의 프로젝트가 아직 없습니다.');
+    };
+
+    filterButtons.forEach((button) => button.addEventListener('click', () => {
+      activeFilter = button.dataset.filter || 'all';
+      filterButtons.forEach((node) => node.classList.toggle('active', node === button));
+      applyFilter();
+    }));
+
     const cached = readCachedList('projects');
-    if (cached?.length) render(cached);
+    if (cached?.length) {
+      allProjects = cached;
+      applyFilter();
+    }
 
     try {
       const data = await fetchPublicProjects();
       if (data?.length) {
         data.forEach(cacheProject);
         cacheList('projects', data);
-        render(data);
-      } else if (!cached?.length) {
+        allProjects = data;
+        applyFilter();
+      } else if (!allProjects.length) {
         showNotice('아직 공개된 프로젝트가 없습니다.');
       }
     } catch {
-      if (!cached?.length) showNotice('프로젝트를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      if (!allProjects.length) showNotice('프로젝트를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     }
   </script>
 </BaseLayout>
