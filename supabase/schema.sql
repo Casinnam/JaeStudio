@@ -12,7 +12,7 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
-create table public.projects (
+create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   name text not null,
@@ -35,19 +35,19 @@ create table public.projects (
   updated_at timestamptz not null default now()
 );
 
-create table public.ai_tools (
+create table if not exists public.ai_tools (
   id uuid primary key default gen_random_uuid(),
   name text unique not null,
   website_url text
 );
 
-create table public.project_ai_tools (
+create table if not exists public.project_ai_tools (
   project_id uuid references public.projects(id) on delete cascade,
   ai_tool_id uuid references public.ai_tools(id) on delete cascade,
   primary key (project_id, ai_tool_id)
 );
 
-create table public.blog_posts (
+create table if not exists public.blog_posts (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   title text not null,
@@ -60,7 +60,7 @@ create table public.blog_posts (
   updated_at timestamptz not null default now()
 );
 
-create table public.support_messages (
+create table if not exists public.support_messages (
   id uuid primary key default gen_random_uuid(),
   display_name text not null check (char_length(display_name) between 1 and 30),
   message text not null check (char_length(message) between 1 and 300),
@@ -89,6 +89,18 @@ $$;
 
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
+
+drop policy if exists "Public projects are readable" on public.projects;
+drop policy if exists "Public posts are readable" on public.blog_posts;
+drop policy if exists "Approved messages are readable" on public.support_messages;
+drop policy if exists "Anyone may submit a message" on public.support_messages;
+drop policy if exists "AI tools are publicly readable" on public.ai_tools;
+drop policy if exists "Project AI links are publicly readable" on public.project_ai_tools;
+drop policy if exists "Admins manage projects" on public.projects;
+drop policy if exists "Admins manage blog posts" on public.blog_posts;
+drop policy if exists "Admins manage messages" on public.support_messages;
+drop policy if exists "Admins manage AI tools" on public.ai_tools;
+drop policy if exists "Admins manage project AI links" on public.project_ai_tools;
 
 create policy "Public projects are readable" on public.projects for select using (is_public = true);
 create policy "Public posts are readable" on public.blog_posts for select using (is_public = true and published_at <= now());
