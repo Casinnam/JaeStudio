@@ -155,7 +155,7 @@ const yearData = [
         .order('created_at', { ascending: false }),
       supabase
         .from('blog_posts')
-        .select('id,slug,title,excerpt,published_at,created_at')
+        .select('id,slug,title,excerpt,cover_image_url,published_at,created_at')
         .eq('is_public', true)
         .lte('published_at', new Date().toISOString())
         .order('published_at', { ascending: false }),

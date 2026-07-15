@@ -68,6 +68,19 @@ create table if not exists public.support_messages (
   created_at timestamptz not null default now()
 );
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'portfolio-media',
+  'portfolio-media',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 alter table public.projects enable row level security;
 alter table public.ai_tools enable row level security;
 alter table public.project_ai_tools enable row level security;
@@ -101,6 +114,10 @@ drop policy if exists "Admins manage blog posts" on public.blog_posts;
 drop policy if exists "Admins manage messages" on public.support_messages;
 drop policy if exists "Admins manage AI tools" on public.ai_tools;
 drop policy if exists "Admins manage project AI links" on public.project_ai_tools;
+drop policy if exists "Admins read portfolio media" on storage.objects;
+drop policy if exists "Admins upload portfolio media" on storage.objects;
+drop policy if exists "Admins update portfolio media" on storage.objects;
+drop policy if exists "Admins delete portfolio media" on storage.objects;
 
 create policy "Public projects are readable" on public.projects for select using (is_public = true);
 create policy "Public posts are readable" on public.blog_posts for select using (is_public = true and published_at <= now());
@@ -114,6 +131,20 @@ create policy "Admins manage blog posts" on public.blog_posts for all to authent
 create policy "Admins manage messages" on public.support_messages for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "Admins manage AI tools" on public.ai_tools for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "Admins manage project AI links" on public.project_ai_tools for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+create policy "Admins read portfolio media" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'portfolio-media' and public.is_admin());
+create policy "Admins upload portfolio media" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'portfolio-media' and public.is_admin());
+create policy "Admins update portfolio media" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'portfolio-media' and public.is_admin())
+  with check (bucket_id = 'portfolio-media' and public.is_admin());
+create policy "Admins delete portfolio media" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'portfolio-media' and public.is_admin());
 
 -- After creating the owner in Authentication > Users, run this once in SQL Editor:
 -- insert into public.admin_users (user_id)

@@ -46,7 +46,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <label>주소용 영문 이름<input name="slug" placeholder="예: focus-flow" required /></label>
           <label class="wide">한 줄 소개<input name="summary" placeholder="무엇을 해결하는 서비스인가요?" required /></label>
           <label class="wide">웹사이트 주소<input name="website_url" type="url" placeholder="https://" /></label>
-          <label class="wide">대표 이미지 주소<input name="cover_image_url" type="url" placeholder="비워두면 웹사이트 첫 화면 미리보기를 사용합니다." /></label>
+          <label class="wide">대표 이미지 업로드<input name="cover_image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /><small>JPG, PNG, WEBP, GIF · 최대 5MB</small><img class="admin-cover-preview is-hidden" data-project-cover-preview alt="프로젝트 대표 이미지 미리보기" /></label>
           <label>시작일<input name="started_at" type="date" /></label><label>출시일<input name="launched_at" type="date" /></label>
           <label>마케팅 비용<input name="marketing_cost" type="number" min="0" value="0" /></label><label>누적 매출<input name="revenue" type="number" min="0" value="0" /></label>
           <label>월 반복 매출<input name="recurring_revenue" type="number" min="0" value="0" /></label><label>유료 고객 수<input name="paid_customers" type="number" min="0" value="0" /></label>
@@ -63,6 +63,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <form class="project-form" id="blog-form">
           <label>제목<input name="title" required /></label><label>주소용 영문 이름<input name="slug" placeholder="my-build-log" required /></label>
           <label class="wide">요약<input name="excerpt" /></label>
+          <label class="wide">대표 이미지 업로드<input name="cover_image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /><small>JPG, PNG, WEBP, GIF · 최대 5MB</small><img class="admin-cover-preview is-hidden" data-blog-cover-preview alt="블로그 대표 이미지 미리보기" /></label>
           <label class="wide">본문<textarea name="content" rows="10" required></textarea></label>
           <label class="check-label"><input name="is_public" type="checkbox" checked /> 바로 공개</label>
           <div class="wide admin-actions"><p class="form-status" data-blog-status></p><div><button class="button button-outline is-hidden" data-blog-cancel type="button">수정 취소</button><button class="button button-primary" data-blog-submit type="submit">글 저장</button></div></div>
@@ -87,6 +88,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const projectForm = document.querySelector<HTMLFormElement>('#project-form');
     const blogForm = document.querySelector<HTMLFormElement>('#blog-form');
     const money = new Intl.NumberFormat('ko-KR');
+    const mediaBucket = 'portfolio-media';
     let cachedProjects: any[] = [];
     let cachedPosts: any[] = [];
     let editingProjectId: string | null = null;
@@ -127,6 +129,44 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       else field.value = value == null ? '' : String(value);
     };
 
+    const showCoverPreview = (selector: string, url?: string | null) => {
+      const preview = document.querySelector<HTMLImageElement>(selector);
+      if (!preview) return;
+      if (url) {
+        preview.src = url;
+        preview.classList.remove('is-hidden');
+      } else {
+        preview.removeAttribute('src');
+        preview.classList.add('is-hidden');
+      }
+    };
+
+    const connectCoverPreview = (form: HTMLFormElement | null, selector: string) => {
+      const input = form?.elements.namedItem('cover_image') as HTMLInputElement | null;
+      input?.addEventListener('change', () => {
+        const file = input.files?.[0];
+        showCoverPreview(selector, file ? URL.createObjectURL(file) : null);
+      });
+    };
+
+    connectCoverPreview(projectForm, '[data-project-cover-preview]');
+    connectCoverPreview(blogForm, '[data-blog-cover-preview]');
+
+    const uploadCover = async (file: File, folder: 'projects' | 'blog') => {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowed.includes(file.type)) throw new Error('JPG, PNG, WEBP, GIF 이미지만 업로드할 수 있습니다.');
+      if (file.size > 5 * 1024 * 1024) throw new Error('대표 이미지는 5MB 이하여야 합니다.');
+      const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = `${folder}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabase.storage.from(mediaBucket).upload(path, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false
+      });
+      if (error) throw new Error(`이미지 업로드 실패: ${error.message}`);
+      return supabase.storage.from(mediaBucket).getPublicUrl(path).data.publicUrl;
+    };
+
     const finishProjectEdit = () => {
       editingProjectId = null;
       projectForm?.reset();
@@ -135,6 +175,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-project-form-title]')!.textContent = '프로젝트 등록';
       document.querySelector('[data-project-submit]')!.textContent = '프로젝트 저장';
       document.querySelector('[data-project-cancel]')?.classList.add('is-hidden');
+      showCoverPreview('[data-project-cover-preview]');
     };
 
     const finishPostEdit = () => {
@@ -145,13 +186,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-blog-form-title]')!.textContent = '새 글 작성';
       document.querySelector('[data-blog-submit]')!.textContent = '글 저장';
       document.querySelector('[data-blog-cancel]')?.classList.add('is-hidden');
+      showCoverPreview('[data-blog-cover-preview]');
     };
 
     const editProject = (id: string) => {
       const project = cachedProjects.find((item) => item.id === id);
       if (!project) return;
       editingProjectId = id;
-      ['name', 'slug', 'summary', 'website_url', 'cover_image_url', 'started_at', 'launched_at', 'marketing_cost', 'revenue', 'recurring_revenue', 'paid_customers', 'status', 'lesson']
+      ['name', 'slug', 'summary', 'website_url', 'started_at', 'launched_at', 'marketing_cost', 'revenue', 'recurring_revenue', 'paid_customers', 'status', 'lesson']
         .forEach((name) => setFormValue(projectForm, name, project[name]));
       setFormValue(projectForm, 'is_public', project.is_public);
       const slug = projectForm?.elements.namedItem('slug') as HTMLInputElement | null;
@@ -159,6 +201,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-project-form-title]')!.textContent = '프로젝트 수정';
       document.querySelector('[data-project-submit]')!.textContent = '수정 내용 저장';
       document.querySelector('[data-project-cancel]')?.classList.remove('is-hidden');
+      showCoverPreview('[data-project-cover-preview]', project.cover_image_url);
       document.querySelector('#project-editor')?.scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -173,6 +216,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-blog-form-title]')!.textContent = '블로그 글 수정';
       document.querySelector('[data-blog-submit]')!.textContent = '수정 내용 저장';
       document.querySelector('[data-blog-cancel]')?.classList.remove('is-hidden');
+      showCoverPreview('[data-blog-cover-preview]', post.cover_image_url);
       document.querySelector('#blog-editor')?.scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -287,12 +331,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const slug = slugify(String(values.get('slug') || values.get('name') || ''));
       if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
+      const existingProject = cachedProjects.find((project) => project.id === editingProjectId);
+      const coverFile = values.get('cover_image');
+      let coverImageUrl = existingProject?.cover_image_url || null;
+      try {
+        if (coverFile instanceof File && coverFile.size) {
+          setStatus(status, '대표 이미지를 업로드하고 있습니다…');
+          coverImageUrl = await uploadCover(coverFile, 'projects');
+        }
+      } catch (uploadError) {
+        return setStatus(status, uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.', true);
+      }
       const projectPayload = {
         name: String(values.get('name')),
         slug,
         summary: String(values.get('summary')),
         website_url: String(values.get('website_url') || '') || null,
-        cover_image_url: String(values.get('cover_image_url') || '') || null,
+        cover_image_url: coverImageUrl,
         started_at: String(values.get('started_at') || '') || null,
         launched_at: String(values.get('launched_at') || '') || null,
         marketing_cost: Number(values.get('marketing_cost') || 0),
@@ -323,11 +378,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       if (!slug) return setStatus(status, '주소용 영문 이름을 입력해주세요.', true);
       setStatus(status, '저장 중…');
       const existingPost = cachedPosts.find((post) => post.id === editingPostId);
+      const coverFile = values.get('cover_image');
+      let coverImageUrl = existingPost?.cover_image_url || null;
+      try {
+        if (coverFile instanceof File && coverFile.size) {
+          setStatus(status, '대표 이미지를 업로드하고 있습니다…');
+          coverImageUrl = await uploadCover(coverFile, 'blog');
+        }
+      } catch (uploadError) {
+        return setStatus(status, uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.', true);
+      }
       const postPayload = {
         title: String(values.get('title')),
         slug,
         excerpt: String(values.get('excerpt') || '') || null,
         content: String(values.get('content')),
+        cover_image_url: coverImageUrl,
         is_public: isPublic,
         published_at: isPublic ? (existingPost?.published_at || new Date().toISOString()) : null,
         updated_at: new Date().toISOString()

@@ -15,9 +15,6 @@ export const projectCoverUrl = (project: any) => {
   if (/^https?:\/\//i.test(project.cover_image_url || '')) return project.cover_image_url;
   const slug = normalizedSlug(String(project.slug || ''));
   if (slug === 'everything-convert') return '/project-covers/everything-convert.png';
-  if (/^https?:\/\//i.test(project.website_url || '')) {
-    return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(project.website_url)}?w=1200&h=700`;
-  }
   return null;
 };
 
@@ -119,6 +116,15 @@ export function createPostRow(post: any, index: number) {
   link.href = slugPath('blog', String(post.slug));
   const number = element('span', 'post-number');
   number.textContent = String(index + 1).padStart(2, '0');
+  const coverUrl = /^https?:\/\//i.test(post.cover_image_url || '') ? post.cover_image_url : null;
+  let thumbnail: HTMLImageElement | null = null;
+  if (coverUrl) {
+    thumbnail = element('img', 'post-thumbnail');
+    thumbnail.src = coverUrl;
+    thumbnail.alt = `${post.title} 대표 이미지`;
+    thumbnail.loading = index > 0 ? 'lazy' : 'eager';
+    link.classList.add('has-cover');
+  }
   const copy = element('div');
   const meta = element('small');
   meta.textContent = `BUILD JOURNAL · ${formatPublicDate(post.published_at || post.created_at)}`;
@@ -129,7 +135,9 @@ export function createPostRow(post: any, index: number) {
   excerpt.textContent = post.excerpt || '제작 과정에서 배운 내용을 기록했습니다.';
   const arrow = element('span', 'round-link');
   arrow.textContent = '↗';
-  link.append(number, copy, excerpt, arrow);
+  link.append(number);
+  if (thumbnail) link.append(thumbnail);
+  link.append(copy, excerpt, arrow);
   return link;
 }
 

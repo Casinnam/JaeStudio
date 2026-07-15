@@ -5,7 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <article class="article-page shell" data-post-detail>
     <a class="back-link" href="/blog">← 모든 글</a>
     <header><span class="eyebrow" data-post-meta>BUILD JOURNAL</span><h1 data-post-title>글을 불러오는 중입니다</h1><p data-post-excerpt></p></header>
-    <div class="article-cover"><span>JAE'S BUILD JOURNAL</span></div>
+    <div class="article-cover" data-post-cover-wrap><img class="is-hidden" data-post-cover alt="" /><span>JAE'S BUILD JOURNAL</span></div>
     <div class="article-body" data-post-content></div>
     <p class="detail-error is-hidden" data-detail-error>글을 찾을 수 없습니다.</p>
   </article>
@@ -17,7 +17,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const slug = querySlug || decodeURIComponent(location.pathname.split('/').filter(Boolean).at(-1) || '');
     const { data: post, error } = await supabase
       .from('blog_posts')
-      .select('slug,title,excerpt,content,published_at,created_at')
+      .select('slug,title,excerpt,content,cover_image_url,published_at,created_at')
       .eq('slug', slug)
       .eq('is_public', true)
       .lte('published_at', new Date().toISOString())
@@ -32,6 +32,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.querySelector('[data-post-title]')!.textContent = post.title;
       document.querySelector('[data-post-excerpt]')!.textContent = post.excerpt || '';
       document.title = `${post.title} — JAE STUDIO`;
+      const cover = document.querySelector<HTMLImageElement>('[data-post-cover]');
+      if (cover && /^https?:\/\//i.test(post.cover_image_url || '')) {
+        cover.src = post.cover_image_url;
+        cover.alt = `${post.title} 대표 이미지`;
+        cover.classList.remove('is-hidden');
+        document.querySelector('[data-post-cover-wrap]')?.classList.add('has-cover');
+        cover.addEventListener('error', () => {
+          cover.classList.add('is-hidden');
+          document.querySelector('[data-post-cover-wrap]')?.classList.remove('has-cover');
+        }, { once: true });
+      }
       const content = document.querySelector('[data-post-content]');
       const paragraphs = String(post.content || '').split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
       content?.replaceChildren(...paragraphs.map((text, index) => {
