@@ -2,6 +2,7 @@ node_modules/
 .npm-cache/
 dist/
 .astro/
+.wrangler/
 .env
 .env.*
 !.env.example
