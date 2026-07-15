@@ -22,26 +22,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p class="detail-error is-hidden" data-detail-error>프로젝트를 찾을 수 없습니다.</p>
   </article>
   <script>
-    import { supabase } from '../lib/supabase';
     import { projectCoverUrl, projectStatusLabels } from '../lib/content-ui';
+    import { cacheProject, fetchPublicProjects, readCachedProject } from '../lib/public-data';
 
     const querySlug = new URLSearchParams(location.search).get('slug');
     const slug = querySlug || decodeURIComponent(location.pathname.split('/').filter(Boolean).at(-1) || '');
-    const { data: project, error } = await supabase
-      .from('projects')
-      .select('*,project_ai_tools(ai_tools(name))')
-      .eq('slug', slug)
-      .eq('is_public', true)
-      .maybeSingle();
 
     const setText = (selector: string, value: string) => {
       const node = document.querySelector(selector);
       if (node) node.textContent = value;
     };
 
-    if (error || !project) {
-      document.querySelector('[data-detail-error]')?.classList.remove('is-hidden');
-    } else {
+    const renderProject = (project: any) => {
       const money = new Intl.NumberFormat('ko-KR');
       const started = project.started_at ? new Date(project.started_at) : null;
       const launched = project.launched_at ? new Date(project.launched_at) : null;
@@ -77,6 +69,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         website.href = project.website_url;
         website.classList.remove('is-hidden');
       }
+    };
+
+    const cachedProject = readCachedProject(slug);
+    if (cachedProject) renderProject(cachedProject);
+
+    try {
+      const [project] = await fetchPublicProjects(slug);
+      if (project) {
+        cacheProject(project);
+        renderProject(project);
+      } else if (!cachedProject) {
+        document.querySelector('[data-detail-error]')?.classList.remove('is-hidden');
+      }
+    } catch {
+      if (!cachedProject) document.querySelector('[data-detail-error]')?.classList.remove('is-hidden');
     }
   </script>
 </BaseLayout>

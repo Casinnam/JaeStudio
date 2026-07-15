@@ -145,12 +145,13 @@ const yearData = [
   <script>
     import { supabase } from '../lib/supabase';
     import { createMessageNote, createPostRow, createProjectCard } from '../lib/content-ui';
+    import { cacheProject } from '../lib/public-data';
 
     const won = new Intl.NumberFormat('ko-KR');
     const [{ data: liveProjects }, { data: livePosts }, { data: liveMessages }] = await Promise.all([
       supabase
         .from('projects')
-        .select('id,slug,name,summary,description,status,revenue,marketing_cost,started_at,launched_at,created_at,website_url,cover_image_url,project_ai_tools(ai_tools(name))')
+        .select('id,slug,name,summary,description,status,revenue,marketing_cost,started_at,launched_at,created_at,website_url,cover_image_url,lesson,project_ai_tools(ai_tools(name))')
         .eq('is_public', true)
         .order('created_at', { ascending: false }),
       supabase
@@ -168,6 +169,7 @@ const yearData = [
     ]);
 
     if (liveProjects?.length) {
+      liveProjects.forEach(cacheProject);
       document.querySelector('[data-live-project-list]')?.replaceChildren(
         ...liveProjects.slice(0, 3).map((project, index) => createProjectCard(project, index, index === 0))
       );

@@ -16,16 +16,13 @@ import { projects } from '../../data/site';
     </div>
   </section>
   <script>
-    import { supabase } from '../../lib/supabase';
     import { createProjectCard } from '../../lib/content-ui';
+    import { cacheProject, fetchPublicProjects } from '../../lib/public-data';
 
-    const { data } = await supabase
-      .from('projects')
-      .select('id,slug,name,summary,description,status,marketing_cost,started_at,launched_at,created_at,website_url,cover_image_url,project_ai_tools(ai_tools(name))')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false });
+    const data = await fetchPublicProjects().catch(() => []);
 
     if (data?.length) {
+      data.forEach(cacheProject);
       document.querySelector('[data-project-list]')?.replaceChildren(
         ...data.map((project, index) => createProjectCard(project, index))
       );
